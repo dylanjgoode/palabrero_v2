@@ -1,8 +1,8 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
-import { conversations, corrections, messages } from "@/db/schema";
+import { conversations, corrections, messages, vocabulary } from "@/db/schema";
 
 export const runtime = "nodejs";
 
@@ -35,30 +35,41 @@ export async function GET(_request: Request, { params }: RouteParams) {
       .where(eq(messages.conversationId, id))
       .orderBy(asc(messages.createdAt));
 
-    // Get corrections for each message
-    const messagesWithCorrections = await Promise.all(
-      messageRows.map(async (msg) => {
-        const correctionRows = await db
+    // Get all corrections for all messages in one query
+    const messageIds = messageRows.map((m) => m.id);
+    const allCorrections = messageIds.length
+      ? await db
           .select()
           .from(corrections)
-          .where(eq(corrections.messageId, msg.id));
+          .where(inArray(corrections.messageId, messageIds))
+      : [];
 
-        return {
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          correctedContent: msg.correctedContent,
-          createdAt: msg.createdAt,
-          corrections: correctionRows.map((c) => ({
-            id: c.id,
-            type: c.errorType,
-            original: c.originalText,
-            corrected: c.correctedText,
-            explanation: c.explanation,
-          })),
-        };
-      })
-    );
+    // Group corrections by messageId
+    const correctionsByMessage = new Map<string, typeof allCorrections>();
+    for (const correction of allCorrections) {
+      const existing = correctionsByMessage.get(correction.messageId) ?? [];
+      existing.push(correction);
+      correctionsByMessage.set(correction.messageId, existing);
+    }
+
+    // Build response with corrections mapped to messages
+    const messagesWithCorrections = messageRows.map((msg) => {
+      const msgCorrections = correctionsByMessage.get(msg.id) ?? [];
+      return {
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        correctedContent: msg.correctedContent,
+        createdAt: msg.createdAt,
+        corrections: msgCorrections.map((c) => ({
+          id: c.id,
+          type: c.errorType,
+          original: c.originalText,
+          corrected: c.correctedText,
+          explanation: c.explanation,
+        })),
+      };
+    });
 
     return NextResponse.json({
       ...conversation,
@@ -92,18 +103,26 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     }
 
     // Get all message IDs for this conversation
-    const messageIds = await db
+    const messageIdRows = await db
       .select({ id: messages.id })
       .from(messages)
       .where(eq(messages.conversationId, id));
 
-    // Delete corrections for all messages
-    for (const msg of messageIds) {
-      await db.delete(corrections).where(eq(corrections.messageId, msg.id));
-    }
+    const messageIds = messageIdRows.map((m) => m.id);
 
-    // Delete messages
-    await db.delete(messages).where(eq(messages.conversationId, id));
+    if (messageIds.length > 0) {
+      // Delete corrections for all messages (single query)
+      await db.delete(corrections).where(inArray(corrections.messageId, messageIds));
+
+      // Nullify vocabulary messageId references (preserve vocabulary but unlink)
+      await db
+        .update(vocabulary)
+        .set({ messageId: null })
+        .where(inArray(vocabulary.messageId, messageIds));
+
+      // Delete messages
+      await db.delete(messages).where(eq(messages.conversationId, id));
+    }
 
     // Delete conversation
     await db.delete(conversations).where(eq(conversations.id, id));

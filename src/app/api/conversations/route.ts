@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 // GET /api/conversations - List all conversations
 export async function GET() {
   try {
+    // Single query with message count using LEFT JOIN and GROUP BY
     const rows = await db
       .select({
         id: conversations.id,
@@ -17,26 +18,14 @@ export async function GET() {
         summary: conversations.summary,
         createdAt: conversations.createdAt,
         updatedAt: conversations.updatedAt,
+        messageCount: sql<number>`count(${messages.id})`.as("messageCount"),
       })
       .from(conversations)
+      .leftJoin(messages, eq(conversations.id, messages.conversationId))
+      .groupBy(conversations.id)
       .orderBy(desc(conversations.updatedAt));
 
-    // Get message counts for each conversation
-    const conversationsWithCounts = await Promise.all(
-      rows.map(async (conv) => {
-        const messageCount = await db
-          .select({ id: messages.id })
-          .from(messages)
-          .where(eq(messages.conversationId, conv.id));
-
-        return {
-          ...conv,
-          messageCount: messageCount.length,
-        };
-      })
-    );
-
-    return NextResponse.json(conversationsWithCounts);
+    return NextResponse.json(rows);
   } catch (error) {
     console.error("Failed to fetch conversations:", error);
     return NextResponse.json(

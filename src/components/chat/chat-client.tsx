@@ -205,7 +205,7 @@ export default function ChatClient() {
     } catch (error) {
       setStatus("error");
       setErrorMessage(
-        "We could not reach the tutor. Check your API key or try again.",
+        "We could not reach the tutor. Check your API key or try .",
       );
     }
   };

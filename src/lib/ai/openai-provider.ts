@@ -22,6 +22,7 @@ function parseJsonResponse(outputText: string): ChatResponse {
     return {
       reply: typeof parsed.reply === "string" ? parsed.reply : fallback.reply,
       corrections: Array.isArray(parsed.corrections) ? parsed.corrections : [],
+      vocabulary: Array.isArray(parsed.vocabulary) ? parsed.vocabulary : [],
     };
   } catch {
     return fallback;

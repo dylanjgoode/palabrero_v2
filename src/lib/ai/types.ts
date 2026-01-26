@@ -12,9 +12,21 @@ export type Correction = {
   explanation?: string;
 };
 
+export type Vocabulary = {
+  term: string;
+  translation: string;
+  partOfSpeech: string;
+  category: string;
+};
+
 export type ChatResponse = {
   reply: string;
   corrections: Correction[];
+  vocabulary?: Vocabulary[];
+  correctedContent?: string | null;
+  tenses?: string[];
+  topics?: string[];
+  conversationSummary?: string;
 };
 
 export type ProviderConfig = {

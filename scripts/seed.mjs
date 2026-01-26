@@ -27,6 +27,45 @@ const insertSetting = sqlite.prepare(
      updated_at=excluded.updated_at`,
 );
 
+const insertTense = sqlite.prepare(
+  `INSERT INTO tenses (id, label)
+   VALUES (@id, @label)
+   ON CONFLICT(id) DO UPDATE SET label=excluded.label`,
+);
+
+const insertTopic = sqlite.prepare(
+  `INSERT INTO topics (id, label)
+   VALUES (@id, @label)
+   ON CONFLICT(id) DO UPDATE SET label=excluded.label`,
+);
+
+const tenses = [
+  { id: "present", label: "Present indicative" },
+  { id: "preterite", label: "Preterite (simple past)" },
+  { id: "imperfect", label: "Imperfect" },
+  { id: "future", label: "Future" },
+  { id: "conditional", label: "Conditional" },
+  { id: "present-subjunctive", label: "Present subjunctive" },
+  { id: "imperfect-subjunctive", label: "Imperfect subjunctive" },
+  { id: "imperative", label: "Commands/imperative" },
+  { id: "present-perfect", label: "Present perfect" },
+  { id: "past-perfect", label: "Past perfect (pluperfect)" },
+];
+
+const topics = [
+  { id: "food", label: "Food & Dining" },
+  { id: "travel", label: "Travel" },
+  { id: "work", label: "Work & Career" },
+  { id: "family", label: "Family" },
+  { id: "health", label: "Health" },
+  { id: "shopping", label: "Shopping" },
+  { id: "weather", label: "Weather" },
+  { id: "hobbies", label: "Hobbies & Leisure" },
+  { id: "education", label: "Education" },
+  { id: "technology", label: "Technology" },
+  { id: "general", label: "General" },
+];
+
 const transaction = sqlite.transaction(() => {
   for (const scenario of scenarios) {
     insertScenario.run({
@@ -49,8 +88,16 @@ const transaction = sqlite.transaction(() => {
   for (const setting of defaults) {
     insertSetting.run({ ...setting, updatedAt: now });
   }
+
+  for (const tense of tenses) {
+    insertTense.run(tense);
+  }
+
+  for (const topic of topics) {
+    insertTopic.run(topic);
+  }
 });
 
 transaction();
 
-console.log(`Seeded ${scenarios.length} scenarios and ${3} settings.`);
+console.log(`Seeded ${scenarios.length} scenarios, ${3} settings, ${tenses.length} tenses, and ${topics.length} topics.`);
