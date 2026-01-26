@@ -1,0 +1,32 @@
+import { eq } from "drizzle-orm";
+
+import { db } from "@/db";
+import { settings } from "@/db/schema";
+
+export async function getSetting(key: string): Promise<string | null> {
+  try {
+    const rows = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key))
+      .limit(1);
+
+    return rows[0]?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getApiKeys() {
+  const [openaiKey, googleKey, provider] = await Promise.all([
+    getSetting("openai_api_key"),
+    getSetting("google_api_key"),
+    getSetting("ai_provider"),
+  ]);
+
+  return {
+    openaiApiKey: openaiKey || process.env.OPENAI_API_KEY || null,
+    googleApiKey: googleKey || process.env.GOOGLE_API_KEY || null,
+    aiProvider: (provider || process.env.AI_PROVIDER || "openai") as "openai" | "gemini",
+  };
+}
