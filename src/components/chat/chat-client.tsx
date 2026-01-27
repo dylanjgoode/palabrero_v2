@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import scenarios from "@/data/scenarios.json";
 import ScenarioSelector from "./scenario-selector";
@@ -64,6 +64,33 @@ type ConversationDetail = {
   tenses?: TenseItem[];
 };
 
+const tenseLabels: Record<string, string> = {
+  present: "Present indicative",
+  preterite: "Preterite (simple past)",
+  imperfect: "Imperfect",
+  future: "Future",
+  conditional: "Conditional",
+  "present-subjunctive": "Present subjunctive",
+  "imperfect-subjunctive": "Imperfect subjunctive",
+  imperative: "Commands/imperative",
+  "present-perfect": "Present perfect",
+  "past-perfect": "Past perfect (pluperfect)",
+};
+
+const topicLabels: Record<string, string> = {
+  food: "Food & Dining",
+  travel: "Travel",
+  work: "Work & Career",
+  family: "Family",
+  health: "Health",
+  shopping: "Shopping",
+  weather: "Weather",
+  hobbies: "Hobbies & Leisure",
+  education: "Education",
+  technology: "Technology",
+  general: "General",
+};
+
 const starterPrompts = [
   "Quiero practicar cómo pedir comida en un restaurante.",
   "Necesito ayuda para preparar una entrevista de trabajo.",
@@ -97,6 +124,15 @@ export default function ChatClient() {
   const [sessionTopics, setSessionTopics] = useState<TopicItem[]>([]);
   const [sessionTenses, setSessionTenses] = useState<TenseItem[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const threshold = 100;
+    isNearBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+  }, []);
 
   // Load conversation history on mount
   useEffect(() => {
@@ -208,10 +244,13 @@ export default function ChatClient() {
   );
 
   useEffect(() => {
-    if (!scrollRef.current) {
+    if (!scrollRef.current || !isNearBottomRef.current) {
       return;
     }
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight });
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages]);
 
   const handleSend = async (content?: string) => {
@@ -287,6 +326,24 @@ export default function ChatClient() {
         });
       }
 
+      // Accumulate topics and tenses from response
+      if (data.topics?.length) {
+        setSessionTopics((prev) => {
+          const newTopics = data.topics!
+            .filter((id) => !prev.some((p) => p.id === id))
+            .map((id) => ({ id, label: topicLabels[id] ?? id }));
+          return [...prev, ...newTopics];
+        });
+      }
+      if (data.tenses?.length) {
+        setSessionTenses((prev) => {
+          const newTenses = data.tenses!
+            .filter((id) => !prev.some((p) => p.id === id))
+            .map((id) => ({ id, label: tenseLabels[id] ?? id }));
+          return [...prev, ...newTenses];
+        });
+      }
+
       setStatus("idle");
       refreshConversations();
     } catch (error) {
@@ -335,6 +392,7 @@ export default function ChatClient() {
 
         <div
           ref={scrollRef}
+          onScroll={handleScroll}
           className="flex-1 space-y-4 overflow-y-auto px-6 py-5"
         >
           {messages.length === 0 ? (
@@ -516,6 +574,41 @@ export default function ChatClient() {
             ))}
           </div>
         </div>
+
+        {(sessionTenses.length > 0 || sessionTopics.length > 0) && (
+          <div className="surface-card p-6">
+            {sessionTenses.length > 0 && (
+              <div>
+                <p className="eyebrow">Tenses practiced</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sessionTenses.map((tense) => (
+                    <span
+                      key={tense.id}
+                      className="rounded-full bg-[rgb(var(--accent-soft))] px-3 py-1 text-xs font-medium text-[rgb(var(--accent))]"
+                    >
+                      {tense.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {sessionTopics.length > 0 && (
+              <div className={sessionTenses.length > 0 ? "mt-5" : ""}>
+                <p className="eyebrow">Topics covered</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sessionTopics.map((topic) => (
+                    <span
+                      key={topic.id}
+                      className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-medium text-[rgb(var(--ink))]"
+                    >
+                      {topic.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="surface-card p-6">
           <p className="eyebrow">Recent corrections</p>

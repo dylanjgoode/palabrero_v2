@@ -140,30 +140,36 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
       );
     }
 
-    // Get all message IDs for this conversation
-    const messageIdRows = await db
-      .select({ id: messages.id })
-      .from(messages)
-      .where(eq(messages.conversationId, id));
+    await db.transaction(async (tx) => {
+      // Get all message IDs for this conversation
+      const messageIdRows = await tx
+        .select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.conversationId, id));
 
-    const messageIds = messageIdRows.map((m) => m.id);
+      const messageIds = messageIdRows.map((m) => m.id);
 
-    if (messageIds.length > 0) {
-      // Delete corrections for all messages (single query)
-      await db.delete(corrections).where(inArray(corrections.messageId, messageIds));
+      if (messageIds.length > 0) {
+        // Delete corrections for all messages (single query)
+        await tx.delete(corrections).where(inArray(corrections.messageId, messageIds));
 
-      // Nullify vocabulary messageId references (preserve vocabulary but unlink)
-      await db
-        .update(vocabulary)
-        .set({ messageId: null })
-        .where(inArray(vocabulary.messageId, messageIds));
+        // Delete junction table entries for topics and tenses
+        await tx.delete(messageTopics).where(inArray(messageTopics.messageId, messageIds));
+        await tx.delete(messageTenses).where(inArray(messageTenses.messageId, messageIds));
 
-      // Delete messages
-      await db.delete(messages).where(eq(messages.conversationId, id));
-    }
+        // Nullify vocabulary messageId references (preserve vocabulary but unlink)
+        await tx
+          .update(vocabulary)
+          .set({ messageId: null })
+          .where(inArray(vocabulary.messageId, messageIds));
 
-    // Delete conversation
-    await db.delete(conversations).where(eq(conversations.id, id));
+        // Delete messages
+        await tx.delete(messages).where(eq(messages.conversationId, id));
+      }
+
+      // Delete conversation
+      await tx.delete(conversations).where(eq(conversations.id, id));
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

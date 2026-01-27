@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const scenarios = sqliteTable("scenarios", {
   id: text("id").primaryKey(),
@@ -20,40 +20,59 @@ export const conversations = sqliteTable("conversations", {
   updatedAt: integer("updated_at").notNull(),
 });
 
-export const messages = sqliteTable("messages", {
-  id: text("id").primaryKey(),
-  conversationId: text("conversation_id")
-    .notNull()
-    .references(() => conversations.id),
-  role: text("role").notNull(),
-  content: text("content").notNull(),
-  correctedContent: text("corrected_content"),
-  createdAt: integer("created_at").notNull(),
-});
+export const messages = sqliteTable(
+  "messages",
+  {
+    id: text("id").primaryKey(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => conversations.id),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    correctedContent: text("corrected_content"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => ({
+    conversationIdIdx: index("messages_conversation_id_idx").on(table.conversationId),
+  }),
+);
 
-export const corrections = sqliteTable("corrections", {
-  id: text("id").primaryKey(),
-  messageId: text("message_id")
-    .notNull()
-    .references(() => messages.id),
-  errorType: text("error_type").notNull(),
-  originalText: text("original_text").notNull(),
-  correctedText: text("corrected_text").notNull(),
-  explanation: text("explanation"),
-  createdAt: integer("created_at").notNull(),
-});
+export const corrections = sqliteTable(
+  "corrections",
+  {
+    id: text("id").primaryKey(),
+    messageId: text("message_id")
+      .notNull()
+      .references(() => messages.id),
+    errorType: text("error_type").notNull(),
+    originalText: text("original_text").notNull(),
+    correctedText: text("corrected_text").notNull(),
+    explanation: text("explanation"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => ({
+    messageIdIdx: index("corrections_message_id_idx").on(table.messageId),
+  }),
+);
 
-export const vocabulary = sqliteTable("vocabulary", {
-  id: text("id").primaryKey(),
-  messageId: text("message_id").references(() => messages.id),
-  term: text("term").notNull(),
-  translation: text("translation"),
-  partOfSpeech: text("part_of_speech"),
-  category: text("category").notNull(),
-  count: integer("count").notNull().default(1),
-  firstSeenAt: integer("first_seen_at").notNull(),
-  lastSeenAt: integer("last_seen_at"),
-});
+export const vocabulary = sqliteTable(
+  "vocabulary",
+  {
+    id: text("id").primaryKey(),
+    messageId: text("message_id").references(() => messages.id),
+    term: text("term").notNull(),
+    translation: text("translation"),
+    partOfSpeech: text("part_of_speech"),
+    category: text("category").notNull(),
+    count: integer("count").notNull().default(1),
+    firstSeenAt: integer("first_seen_at").notNull(),
+    lastSeenAt: integer("last_seen_at"),
+  },
+  (table) => ({
+    messageIdIdx: index("vocabulary_message_id_idx").on(table.messageId),
+    termIdx: index("vocabulary_term_idx").on(table.term),
+  }),
+);
 
 export const topics = sqliteTable("topics", {
   id: text("id").primaryKey(),

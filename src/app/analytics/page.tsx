@@ -1,6 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  BarChart,
+  PieChart,
+  Area,
+  Bar,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 type VocabItem = {
   id: string;
@@ -19,33 +34,55 @@ type CategorySummary = {
   totalUses: number;
 };
 
-const statCards = [
-  { label: "Conversations", value: "12" },
-  { label: "Messages", value: "248" },
-  { label: "Corrections", value: "64" },
-  { label: "Vocabulary added", value: "83" },
-];
+type AnalyticsData = {
+  tenses: Array<{ id: string; label: string; count: number }>;
+  topics: Array<{ id: string; label: string; count: number }>;
+  corrections: Array<{ type: string; count: number }>;
+  progress: Array<{
+    week: string;
+    weekStart: number;
+    userMessages: number;
+    corrections: number;
+    newVocabulary: number;
+  }>;
+  totals: {
+    conversations: number;
+    userMessages: number;
+    corrections: number;
+    vocabulary: number;
+  };
+};
 
 const tabs = ["Overview", "Vocabulary", "Grammar", "Topics", "Flashcards"];
 
-const chartPlaceholders = [
-  {
-    title: "Accuracy trend",
-    note: "Weekly improvement in corrected vs. uncorrected phrasing.",
-  },
-  {
-    title: "Tense distribution",
-    note: "Present, preterite, imperfect, conditional, subjunctive.",
-  },
-  {
-    title: "Topic coverage",
-    note: "Travel, food, work, relationships, current events.",
-  },
-  {
-    title: "Vocabulary growth",
-    note: "New words introduced by you and the tutor.",
-  },
+const CHART_COLORS = {
+  teal: "rgb(30, 95, 80)",
+  tealSoft: "rgb(214, 231, 226)",
+  tealMid: "rgba(30, 95, 80, 0.5)",
+  muted: "rgb(86, 94, 90)",
+  ink: "rgb(21, 24, 24)",
+  gridLine: "rgba(0, 0, 0, 0.06)",
+};
+
+const CATEGORY_PALETTE = [
+  "rgb(30, 95, 80)",
+  "rgb(56, 135, 115)",
+  "rgb(86, 160, 140)",
+  "rgb(120, 180, 160)",
+  "rgb(160, 200, 185)",
+  "rgb(45, 80, 68)",
+  "rgb(70, 110, 95)",
+  "rgb(200, 220, 210)",
 ];
+
+const tooltipStyle: React.CSSProperties = {
+  borderRadius: 12,
+  border: "1px solid rgba(0,0,0,0.08)",
+  backdropFilter: "blur(8px)",
+  background: "rgba(255,255,255,0.92)",
+  fontSize: 12,
+  boxShadow: "0 8px 24px -12px rgba(0,0,0,0.15)",
+};
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("Overview");
@@ -54,6 +91,47 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(false);
   const [vocabFetched, setVocabFetched] = useState(false);
   const [vocabError, setVocabError] = useState(false);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState(false);
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    setAnalyticsError(false);
+    try {
+      const res = await fetch("/api/analytics");
+      if (res.ok) {
+        setAnalytics(await res.json());
+      } else {
+        setAnalyticsError(true);
+      }
+    } catch {
+      setAnalyticsError(true);
+    }
+    setAnalyticsLoading(false);
+  };
+
+  useEffect(() => {
+    fetch("/api/analytics")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: AnalyticsData) => setAnalytics(data))
+      .catch(() => setAnalyticsError(true))
+      .finally(() => setAnalyticsLoading(false));
+  }, []);
+
+  const stats = analytics
+    ? [
+        { label: "Conversations", value: String(analytics.totals.conversations) },
+        { label: "Messages", value: String(analytics.totals.userMessages) },
+        { label: "Corrections", value: String(analytics.totals.corrections) },
+        { label: "Vocabulary added", value: String(analytics.totals.vocabulary) },
+      ]
+    : [
+        { label: "Conversations", value: "—" },
+        { label: "Messages", value: "—" },
+        { label: "Corrections", value: "—" },
+        { label: "Vocabulary added", value: "—" },
+      ];
 
   const fetchVocabulary = async () => {
     setLoading(true);
@@ -81,6 +159,15 @@ export default function AnalyticsPage() {
     }
   };
 
+  const progressData = (analytics?.progress ?? []).map((p) => ({
+    ...p,
+    label: `W${p.week.split("-")[1]}`,
+  }));
+
+  const tensesWithData = (analytics?.tenses ?? []).filter((t) => t.count > 0);
+  const topicsWithData = (analytics?.topics ?? []).filter((t) => t.count > 0);
+  const correctionsData = analytics?.corrections ?? [];
+
   return (
     <div className="space-y-10">
       <header className="space-y-3">
@@ -95,7 +182,7 @@ export default function AnalyticsPage() {
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
+        {stats.map((stat) => (
           <div key={stat.label} className="surface-card p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
               {stat.label}
@@ -111,11 +198,13 @@ export default function AnalyticsPage() {
             <p className="eyebrow">Dashboard</p>
             <p className="mt-2 text-lg font-semibold">All sessions</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="tablist">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
+                role="tab"
+                aria-selected={activeTab === tab}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                   activeTab === tab
                     ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))]"
@@ -130,17 +219,290 @@ export default function AnalyticsPage() {
         </div>
 
         {activeTab === "Overview" && (
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            {chartPlaceholders.map((chart) => (
-              <div key={chart.title} className="surface-muted p-6">
-                <p className="text-sm font-semibold">{chart.title}</p>
-                <p className="mt-2 text-sm text-[rgb(var(--muted))]">
-                  {chart.note}
-                </p>
-                <div className="mt-6 h-32 rounded-2xl border border-dashed border-black/15 bg-white/60" />
+          <>
+            {analyticsLoading ? (
+              <div className="mt-6 text-center py-12 text-[rgb(var(--muted))]">
+                Loading analytics...
               </div>
-            ))}
-          </div>
+            ) : analyticsError ? (
+              <div className="mt-6 text-center py-12">
+                <p className="text-[rgb(var(--muted))]">Failed to load analytics.</p>
+                <button
+                  onClick={fetchAnalytics}
+                  className="mt-2 text-sm text-[rgb(var(--accent))] hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : !analytics ? (
+              <div className="mt-6 text-center py-12 text-[rgb(var(--muted))]">
+                No analytics data available yet. Start a conversation to
+                generate data.
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                {/* Weekly progress: messages, corrections, vocabulary */}
+                <div className="surface-muted p-6">
+                  <p className="text-sm font-semibold">Weekly progress</p>
+                  <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                    Messages, corrections, and new vocabulary by week.
+                  </p>
+                  {progressData.length === 0 ? (
+                    <div className="mt-6 flex h-[200px] items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/60 text-sm text-[rgb(var(--muted))]">
+                      Complete a few sessions to see progress.
+                    </div>
+                  ) : (
+                    <div className="mt-4 h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={progressData}>
+                          <defs>
+                            <linearGradient
+                              id="gradMessages"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor={CHART_COLORS.teal}
+                                stopOpacity={0.18}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor={CHART_COLORS.teal}
+                                stopOpacity={0.02}
+                              />
+                            </linearGradient>
+                            <linearGradient
+                              id="gradCorrections"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor={CHART_COLORS.muted}
+                                stopOpacity={0.15}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor={CHART_COLORS.muted}
+                                stopOpacity={0.01}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke={CHART_COLORS.gridLine}
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 11, fill: CHART_COLORS.muted }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: CHART_COLORS.muted }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={30}
+                          />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ fontSize: 11 }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="userMessages"
+                            name="Messages"
+                            stroke={CHART_COLORS.teal}
+                            fill="url(#gradMessages)"
+                            strokeWidth={2}
+                            dot={false}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="corrections"
+                            name="Corrections"
+                            stroke={CHART_COLORS.muted}
+                            fill="url(#gradCorrections)"
+                            strokeWidth={2}
+                            dot={false}
+                            strokeDasharray="4 4"
+                          />
+                          <Bar
+                            dataKey="newVocabulary"
+                            name="New vocabulary"
+                            fill={CHART_COLORS.tealSoft}
+                            radius={[4, 4, 0, 0]}
+                            barSize={12}
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                {/* Error type breakdown */}
+                <div className="surface-muted p-6">
+                  <p className="text-sm font-semibold">Error types</p>
+                  <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                    Most frequent correction categories.
+                  </p>
+                  {correctionsData.length === 0 ? (
+                    <div className="mt-6 flex h-[200px] items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/60 text-sm text-[rgb(var(--muted))]">
+                      No corrections recorded yet.
+                    </div>
+                  ) : (
+                    <div className="mt-4 h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={correctionsData}
+                          layout="vertical"
+                          margin={{ left: 10, right: 20 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke={CHART_COLORS.gridLine}
+                            horizontal={false}
+                          />
+                          <XAxis
+                            type="number"
+                            tick={{ fontSize: 11, fill: CHART_COLORS.muted }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="type"
+                            tick={{ fontSize: 11, fill: CHART_COLORS.ink }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={90}
+                          />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Bar
+                            dataKey="count"
+                            name="Corrections"
+                            fill={CHART_COLORS.teal}
+                            radius={[0, 6, 6, 0]}
+                            barSize={18}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tense distribution donut */}
+                <div className="surface-muted p-6">
+                  <p className="text-sm font-semibold">Tense distribution</p>
+                  <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                    Verb tenses practiced across all sessions.
+                  </p>
+                  {tensesWithData.length === 0 ? (
+                    <div className="mt-6 flex h-[200px] items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/60 text-sm text-[rgb(var(--muted))]">
+                      No tense data recorded yet.
+                    </div>
+                  ) : (
+                    <div className="mt-4 h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={tensesWithData}
+                            dataKey="count"
+                            nameKey="label"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            strokeWidth={2}
+                            stroke="rgba(255,255,255,0.8)"
+                          >
+                            {tensesWithData.map((t, i) => (
+                              <Cell
+                                key={t.id}
+                                fill={
+                                  CATEGORY_PALETTE[
+                                    i % CATEGORY_PALETTE.length
+                                  ]
+                                }
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{
+                              fontSize: 11,
+                              color: CHART_COLORS.muted,
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                {/* Topic coverage */}
+                <div className="surface-muted p-6">
+                  <p className="text-sm font-semibold">Topic coverage</p>
+                  <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                    Conversation topics by message frequency.
+                  </p>
+                  {topicsWithData.length === 0 ? (
+                    <div className="mt-6 flex h-[200px] items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/60 text-sm text-[rgb(var(--muted))]">
+                      No topic data recorded yet.
+                    </div>
+                  ) : (
+                    <div className="mt-4 h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={topicsWithData}
+                          layout="vertical"
+                          margin={{ left: 10, right: 20 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke={CHART_COLORS.gridLine}
+                            horizontal={false}
+                          />
+                          <XAxis
+                            type="number"
+                            tick={{ fontSize: 11, fill: CHART_COLORS.muted }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="label"
+                            tick={{ fontSize: 11, fill: CHART_COLORS.ink }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={100}
+                          />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Bar
+                            dataKey="count"
+                            name="Messages"
+                            fill={CHART_COLORS.tealMid}
+                            radius={[0, 6, 6, 0]}
+                            barSize={18}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {activeTab === "Vocabulary" && (

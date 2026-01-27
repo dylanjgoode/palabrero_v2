@@ -8,7 +8,7 @@ Palabrero is a local-first Spanish language learning web application. It's a con
 
 - **Framework**: Next.js 16 with App Router
 - **Language**: TypeScript 5 (strict mode)
-- **UI**: React 19, Tailwind CSS 4
+- **UI**: React 19, Tailwind CSS 4, Recharts
 - **Database**: SQLite via better-sqlite3 + Drizzle ORM
 - **AI**: OpenAI API or Google Gemini (chat completions), OpenAI TTS
 - **Fonts**: IBM Plex Sans, IBM Plex Mono, Source Serif 4
@@ -29,7 +29,12 @@ npm run db:seed      # Seed scenarios and settings
 ```
 src/
 ├── app/                    # Next.js App Router pages
-│   ├── api/chat/route.ts   # Chat API endpoint
+│   ├── api/
+│   │   ├── chat/route.ts       # Chat API endpoint
+│   │   ├── analytics/route.ts  # Aggregated analytics data
+│   │   ├── conversations/      # CRUD + detail with topics/tenses
+│   │   ├── vocabulary/route.ts # Vocabulary list with filtering
+│   │   └── settings/route.ts   # User settings
 │   ├── chat/page.tsx       # Main chat page
 │   ├── analytics/page.tsx  # Analytics dashboard
 │   └── settings/page.tsx   # Settings page
@@ -105,6 +110,7 @@ Relationships:
 ## Development Notes
 
 - No testing framework configured yet
-- Analytics and settings pages are placeholder shells
-- Chat functionality is fully implemented
-- Database schema supports features not yet implemented (vocabulary tracking, grammar analytics)
+- Analytics dashboard built with Recharts (weekly progress, error types, tense distribution donut, topic coverage); fetches from `/api/analytics`. Vocabulary tab with category summaries and table. Error states with retry. ARIA tab roles.
+- Settings page is a placeholder shell
+- Chat UI includes: corrections display, corrected content under user messages, conversation summaries, topics/tenses sidebar panel, session vocabulary
+- Vocabulary review page not yet built (API at `/api/vocabulary` is ready)
