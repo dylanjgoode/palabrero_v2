@@ -1,18 +1,31 @@
-# Todo
+## Partially Implemented (backend ready, needs UI)
 
-## Chat UI - Missing Backend Features
+- [ ] **Add vocabulary review page** - Create a vocabulary dashboard page to display accumulated vocabulary across all sessions. Backend API `/api/vocabulary` already exists with filtering, sorting, and category summaries. Build UI showing full vocabulary list with term, translation, part of speech, category, filter/sort options, and first/last seen dates.
 
-### UI Needs Backend Implementation
+- [ ] **Show topics/tenses in conversation UI** - Backend extracts and stores topics (food, travel, work, etc.) and tenses (present, preterite, imperfect, etc.) for each message. This data is invisible to users. Add badges or panel showing tenses/topics used in current conversation.
 
-- [ ] **Tense/Topic tracking** - Database schema exists (`tenses`, `topics`, junction tables) but API never extracts or populates this data from conversations
-- [ ] **Conversation summaries** - `conversations.summary` field exists but is never populated; could auto-generate summary from conversation content
-- [ ] **Corrected message content** - `messages.correctedContent` field exists but is never set; could store full corrected version of user messages
 
-### Backend Ready - UI Missing
+## Not Implemented (database schema ready)
 
-- [ ] **Delete conversation button** - Backend DELETE `/api/conversations/:id` works, but no UI button to trigger deletion
-- [ ] **Vocabulary display in chat** - Backend extracts 1-3 vocab terms per message and stores with frequency tracking, but chat UI doesn't surface this data (may belong in analytics page)
+- [ ] **Create analytics API endpoints** - Build backend endpoints to support analytics dashboard:
+  - `GET /api/analytics/tenses` - tense usage distribution
+  - `GET /api/analytics/topics` - topic coverage distribution
+  - `GET /api/analytics/corrections` - error types breakdown
+  - `GET /api/analytics/progress` - learning metrics over time
 
-### UI Polish
+- [ ] **Build analytics dashboard** - The `/app/analytics/page.tsx` exists as placeholder. Build out with:
+  - Tense usage distribution chart
+  - Topic distribution chart
+  - Error type frequency breakdown
+  - Learning progress over time
+  - *(Blocked by: Create analytics API endpoints)*
+
+## UI Polish
 
 - [ ] **Mode/Output display** - Chat sidebar shows "Mode: conversational correction" and "Output: reply + corrections" as if configurable, but these are hardcoded; either make configurable or remove the display
+
+## Completed
+
+- [x] **Display corrected content in chat** - Added UI to show corrected version of user messages below the original when corrections exist. Shows in emerald-colored box with "Corrected version" label.
+
+- [x] **Display conversation summary in list** - Added summary display in conversation list. Shows truncated summary below the title when available.

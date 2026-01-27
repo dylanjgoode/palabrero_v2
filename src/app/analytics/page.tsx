@@ -1,3 +1,24 @@
+"use client";
+
+import { useState } from "react";
+
+type VocabItem = {
+  id: string;
+  term: string;
+  translation: string;
+  partOfSpeech: string;
+  category: string;
+  count: number;
+  firstSeenAt: number;
+  lastSeenAt: number;
+};
+
+type CategorySummary = {
+  category: string;
+  termCount: number;
+  totalUses: number;
+};
+
 const statCards = [
   { label: "Conversations", value: "12" },
   { label: "Messages", value: "248" },
@@ -27,6 +48,39 @@ const chartPlaceholders = [
 ];
 
 export default function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState("Overview");
+  const [vocabulary, setVocabulary] = useState<VocabItem[]>([]);
+  const [categories, setCategories] = useState<CategorySummary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [vocabFetched, setVocabFetched] = useState(false);
+  const [vocabError, setVocabError] = useState(false);
+
+  const fetchVocabulary = async () => {
+    setLoading(true);
+    setVocabError(false);
+    try {
+      const res = await fetch("/api/vocabulary?orderBy=lastSeenAt&limit=100");
+      if (res.ok) {
+        const data = await res.json();
+        setVocabulary(data.vocabulary);
+        setCategories(data.summary.categories);
+      } else {
+        setVocabError(true);
+      }
+    } catch {
+      setVocabError(true);
+    }
+    setLoading(false);
+    setVocabFetched(true);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "Vocabulary" && (!vocabFetched || vocabError)) {
+      fetchVocabulary();
+    }
+  };
+
   return (
     <div className="space-y-10">
       <header className="space-y-3">
@@ -58,11 +112,12 @@ export default function AnalyticsPage() {
             <p className="mt-2 text-lg font-semibold">All sessions</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <button
                 key={tab}
+                onClick={() => handleTabChange(tab)}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  index === 0
+                  activeTab === tab
                     ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))]"
                     : "border-black/10 text-[rgb(var(--muted))] hover:border-black/40"
                 }`}
@@ -74,17 +129,90 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {chartPlaceholders.map((chart) => (
-            <div key={chart.title} className="surface-muted p-6">
-              <p className="text-sm font-semibold">{chart.title}</p>
-              <p className="mt-2 text-sm text-[rgb(var(--muted))]">
-                {chart.note}
-              </p>
-              <div className="mt-6 h-32 rounded-2xl border border-dashed border-black/15 bg-white/60" />
-            </div>
-          ))}
-        </div>
+        {activeTab === "Overview" && (
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {chartPlaceholders.map((chart) => (
+              <div key={chart.title} className="surface-muted p-6">
+                <p className="text-sm font-semibold">{chart.title}</p>
+                <p className="mt-2 text-sm text-[rgb(var(--muted))]">
+                  {chart.note}
+                </p>
+                <div className="mt-6 h-32 rounded-2xl border border-dashed border-black/15 bg-white/60" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "Vocabulary" && (
+          <div className="mt-6 space-y-6">
+            {loading ? (
+              <div className="text-center py-8 text-[rgb(var(--muted))]">
+                Loading vocabulary...
+              </div>
+            ) : vocabError ? (
+              <div className="text-center py-8">
+                <p className="text-[rgb(var(--muted))]">Failed to load vocabulary.</p>
+                <button
+                  onClick={fetchVocabulary}
+                  className="mt-2 text-sm text-[rgb(var(--accent))] hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : vocabulary.length === 0 ? (
+              <div className="text-center py-8 text-[rgb(var(--muted))]">
+                No vocabulary recorded yet. Start a conversation to build your vocabulary list.
+              </div>
+            ) : (
+              <>
+                {/* Category summary cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {categories.map((cat) => (
+                    <div key={cat.category} className="surface-muted p-4">
+                      <p className="text-xs text-[rgb(var(--muted))] capitalize">{cat.category}</p>
+                      <p className="text-2xl font-bold">{cat.termCount}</p>
+                      <p className="text-xs text-[rgb(var(--muted))]">{cat.totalUses} uses</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Vocabulary table */}
+                <div className="surface-muted overflow-hidden rounded-xl">
+                  <table className="w-full text-sm">
+                    <thead className="bg-black/5">
+                      <tr>
+                        <th className="text-left p-3 font-medium">Term</th>
+                        <th className="text-left p-3 font-medium">Translation</th>
+                        <th className="text-left p-3 font-medium">Category</th>
+                        <th className="text-right p-3 font-medium">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vocabulary.map((v) => (
+                        <tr key={v.id} className="border-t border-black/10">
+                          <td className="p-3 font-medium">{v.term}</td>
+                          <td className="p-3 text-[rgb(var(--muted))]">{v.translation}</td>
+                          <td className="p-3">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-black/5 capitalize">
+                              {v.category}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right">{v.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab !== "Overview" && activeTab !== "Vocabulary" && (
+          <div className="mt-6 text-center py-12 text-[rgb(var(--muted))]">
+            {activeTab} analytics coming soon.
+          </div>
+        )}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

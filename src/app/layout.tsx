@@ -49,7 +49,7 @@ export default function RootLayout({
                   Palabrero
                 </p>
                 <p className="text-sm text-[rgb(var(--muted))]">
-                  Conversation-first Spanish practice with serious feedback.
+                  Un lugar para expresarse, aprender y reflejar.
                 </p>
               </div>
               <TopNav />

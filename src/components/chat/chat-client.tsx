@@ -17,12 +17,33 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   corrections?: Correction[];
+  correctedContent?: string | null;
+};
+
+type VocabItem = {
+  term: string;
+  translation: string;
+  category: string;
+};
+
+type TopicItem = {
+  id: string;
+  label: string;
+};
+
+type TenseItem = {
+  id: string;
+  label: string;
 };
 
 type ChatResponse = {
   reply: string;
   corrections: Correction[];
   conversationId: string;
+  vocabulary?: VocabItem[];
+  correctedContent?: string | null;
+  topics?: string[];
+  tenses?: string[];
 };
 
 type ConversationSummary = {
@@ -31,6 +52,7 @@ type ConversationSummary = {
   scenarioId: string | null;
   messageCount: number;
   updatedAt: number;
+  summary: string | null;
 };
 
 type ConversationDetail = {
@@ -38,6 +60,8 @@ type ConversationDetail = {
   title: string;
   scenarioId: string | null;
   messages: ChatMessage[];
+  topics?: TopicItem[];
+  tenses?: TenseItem[];
 };
 
 const starterPrompts = [
@@ -48,6 +72,12 @@ const starterPrompts = [
 
 const defaultScenario =
   scenarios.find((scenario) => scenario.isDefault) ?? scenarios[0];
+
+const XIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
 function formatRole(role: ChatMessage["role"]) {
   return role === "user" ? "You" : "Tutor";
@@ -61,6 +91,11 @@ export default function ChatClient() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [sessionVocab, setSessionVocab] = useState<VocabItem[]>([]);
+  const [sessionTopics, setSessionTopics] = useState<TopicItem[]>([]);
+  const [sessionTenses, setSessionTenses] = useState<TenseItem[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Load conversation history on mount
@@ -101,6 +136,9 @@ export default function ChatClient() {
       const data = (await response.json()) as ConversationDetail;
       setConversationId(data.id);
       setMessages(data.messages);
+      setSessionVocab([]); // Reset session vocab when loading different conversation
+      setSessionTopics(data.topics ?? []);
+      setSessionTenses(data.tenses ?? []);
       if (data.scenarioId) {
         setScenarioId(data.scenarioId);
       }
@@ -109,6 +147,34 @@ export default function ChatClient() {
     } catch {
       setErrorMessage("Failed to load conversation.");
     }
+  };
+
+  const confirmDeleteConversation = (id: string, title: string) => {
+    setDeleteConfirm({ id, title });
+  };
+
+  const deleteConversation = async (id: string) => {
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete");
+
+      // Clear active conversation if it was deleted
+      if (conversationId === id) {
+        setConversationId(null);
+        setMessages([]);
+        setSessionVocab([]);
+        setSessionTopics([]);
+        setSessionTenses([]);
+      }
+
+      await refreshConversations();
+      setDeleteConfirm(null);
+    } catch {
+      setErrorMessage("Failed to delete conversation.");
+      setDeleteConfirm(null);
+    }
+    setDeleting(false);
   };
 
   const metrics = useMemo(() => {
@@ -199,7 +265,28 @@ export default function ChatClient() {
         corrections: data.corrections ?? [],
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      // Update user message with correctedContent (if present) and add assistant message
+      setMessages((prev) => {
+        const updated = data.correctedContent
+          ? prev.map((msg) =>
+              msg.id === userMessage.id
+                ? { ...msg, correctedContent: data.correctedContent }
+                : msg
+            )
+          : prev;
+        return [...updated, assistantMessage];
+      });
+
+      // Accumulate vocabulary from response
+      if (data.vocabulary?.length) {
+        setSessionVocab((prev) => {
+          const newTerms = data.vocabulary!.filter(
+            (v) => !prev.some((p) => p.term.toLowerCase() === v.term.toLowerCase())
+          );
+          return [...prev, ...newTerms].slice(-10); // Keep last 10
+        });
+      }
+
       setStatus("idle");
       refreshConversations();
     } catch (error) {
@@ -216,6 +303,9 @@ export default function ChatClient() {
     setConversationId(null);
     setStatus("idle");
     setErrorMessage(null);
+    setSessionVocab([]);
+    setSessionTopics([]);
+    setSessionTenses([]);
   };
 
   return (
@@ -274,8 +364,8 @@ export default function ChatClient() {
             messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
+                className={`flex flex-col ${
+                  message.role === "user" ? "items-end" : "items-start"
                 }`}
               >
                 <div
@@ -297,6 +387,16 @@ export default function ChatClient() {
                   </div>
                   <p className="leading-relaxed">{message.content}</p>
                 </div>
+                {message.role === "user" && message.correctedContent && (
+                  <div className="mt-2 max-w-[80%] rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+                    <p className="text-[0.65rem] uppercase tracking-[0.2em] text-emerald-600 mb-1">
+                      Corrected version
+                    </p>
+                    <p className="text-emerald-800 leading-relaxed">
+                      {message.correctedContent}
+                    </p>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -342,23 +442,41 @@ export default function ChatClient() {
             <p className="eyebrow">Recent conversations</p>
             <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
               {conversations.slice(0, 5).map((conv) => (
-                <button
+                <div
                   key={conv.id}
-                  type="button"
-                  onClick={() => loadConversation(conv.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition hover:bg-black/5 ${
-                    conversationId === conv.id
-                      ? "bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))]"
-                      : "text-[rgb(var(--muted))]"
-                  }`}
+                  className="group relative flex items-center"
                 >
-                  <p className="font-medium truncate text-[rgb(var(--ink))]">
-                    {conv.title}
-                  </p>
-                  <p className="text-xs mt-0.5">
-                    {conv.messageCount} messages
-                  </p>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => loadConversation(conv.id)}
+                    className={`flex-1 text-left px-3 py-2 rounded-lg text-sm transition hover:bg-black/5 ${
+                      conversationId === conv.id
+                        ? "bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))]"
+                        : "text-[rgb(var(--muted))]"
+                    }`}
+                  >
+                    <p className="font-medium truncate text-[rgb(var(--ink))] pr-6">
+                      {conv.title}
+                    </p>
+                    {conv.summary && (
+                      <p className="text-xs mt-0.5 truncate text-[rgb(var(--muted))] pr-6">
+                        {conv.summary}
+                      </p>
+                    )}
+                    <p className="text-xs mt-0.5">{conv.messageCount} messages</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmDeleteConversation(conv.id, conv.title);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-100 text-[rgb(var(--muted))] hover:text-red-600 transition"
+                    aria-label="Delete conversation"
+                  >
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -428,7 +546,60 @@ export default function ChatClient() {
             </div>
           )}
         </div>
+
+        {sessionVocab.length > 0 && (
+          <div className="surface-card p-6">
+            <p className="eyebrow">Session Vocabulary</p>
+            <div className="mt-4 space-y-2">
+              {sessionVocab.map((vocab) => (
+                <div key={vocab.term} className="flex justify-between items-start text-sm">
+                  <div>
+                    <span className="font-medium">{vocab.term}</span>
+                    <span className="text-[rgb(var(--muted))] ml-2">{vocab.translation}</span>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--surface-muted))] text-[rgb(var(--muted))]">
+                    {vocab.category}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
+
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => !deleting && setDeleteConfirm(null)}
+          onKeyDown={(e) => e.key === "Escape" && !deleting && setDeleteConfirm(null)}
+        >
+          <div
+            className="surface-card p-6 max-w-sm mx-4 rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-lg">Delete conversation?</h3>
+            <p className="text-[rgb(var(--muted))] mt-2">
+              &ldquo;{deleteConfirm.title}&rdquo; will be permanently deleted.
+            </p>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:bg-black/5 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteConversation(deleteConfirm.id)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

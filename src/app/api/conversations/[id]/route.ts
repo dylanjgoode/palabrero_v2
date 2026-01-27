@@ -2,7 +2,16 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
-import { conversations, corrections, messages, vocabulary } from "@/db/schema";
+import {
+  conversations,
+  corrections,
+  messages,
+  messageTenses,
+  messageTopics,
+  tenses,
+  topics,
+  vocabulary,
+} from "@/db/schema";
 
 export const runtime = "nodejs";
 
@@ -52,6 +61,33 @@ export async function GET(_request: Request, { params }: RouteParams) {
       correctionsByMessage.set(correction.messageId, existing);
     }
 
+    // Get all topics and tenses for the conversation's messages
+    const allTopics = messageIds.length
+      ? await db
+          .select({
+            id: topics.id,
+            label: topics.label,
+          })
+          .from(messageTopics)
+          .innerJoin(topics, eq(messageTopics.topicId, topics.id))
+          .where(inArray(messageTopics.messageId, messageIds))
+      : [];
+
+    const allTenses = messageIds.length
+      ? await db
+          .select({
+            id: tenses.id,
+            label: tenses.label,
+          })
+          .from(messageTenses)
+          .innerJoin(tenses, eq(messageTenses.tenseId, tenses.id))
+          .where(inArray(messageTenses.messageId, messageIds))
+      : [];
+
+    // Deduplicate topics and tenses
+    const uniqueTopics = [...new Map(allTopics.map((t) => [t.id, t])).values()];
+    const uniqueTenses = [...new Map(allTenses.map((t) => [t.id, t])).values()];
+
     // Build response with corrections mapped to messages
     const messagesWithCorrections = messageRows.map((msg) => {
       const msgCorrections = correctionsByMessage.get(msg.id) ?? [];
@@ -74,6 +110,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({
       ...conversation,
       messages: messagesWithCorrections,
+      topics: uniqueTopics,
+      tenses: uniqueTenses,
     });
   } catch (error) {
     console.error("Failed to fetch conversation:", error);
