@@ -349,7 +349,7 @@ export default function ChatClient() {
     } catch (error) {
       setStatus("error");
       setErrorMessage(
-        "We could not reach the tutor. Check your API key or try .",
+        "We could not reach the tutor. Check your API key or try again.",
       );
     }
   };
@@ -665,6 +665,8 @@ export default function ChatClient() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => !deleting && setDeleteConfirm(null)}
           onKeyDown={(e) => e.key === "Escape" && !deleting && setDeleteConfirm(null)}
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
         >
           <div
             className="surface-card p-6 max-w-sm mx-4 rounded-xl"

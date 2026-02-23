@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { settings } from "@/db/schema";
@@ -10,10 +9,7 @@ const ALLOWED_KEYS = ["openai_api_key", "google_api_key", "ai_provider"];
 
 export async function GET() {
   try {
-    const rows = await db
-      .select()
-      .from(settings)
-      .where(eq(settings.key, settings.key));
+    const rows = await db.select().from(settings);
 
     const result: Record<string, string> = {};
     for (const row of rows) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -55,14 +55,25 @@ type AnalyticsData = {
 
 const tabs = ["Overview", "Vocabulary", "Grammar", "Topics", "Flashcards"];
 
-const CHART_COLORS = {
-  teal: "rgb(30, 95, 80)",
-  tealSoft: "rgb(214, 231, 226)",
-  tealMid: "rgba(30, 95, 80, 0.5)",
-  muted: "rgb(86, 94, 90)",
-  ink: "rgb(21, 24, 24)",
-  gridLine: "rgba(0, 0, 0, 0.06)",
-};
+function getCssVar(name: string): string {
+  if (typeof window === "undefined") return "";
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function buildChartColors() {
+  const accent = getCssVar("--accent") || "30 95 80";
+  const accentSoft = getCssVar("--accent-soft") || "214 231 226";
+  const muted = getCssVar("--muted") || "86 94 90";
+  const ink = getCssVar("--ink") || "21 24 24";
+  return {
+    teal: `rgb(${accent})`,
+    tealSoft: `rgb(${accentSoft})`,
+    tealMid: `rgba(${accent}, 0.5)`,
+    muted: `rgb(${muted})`,
+    ink: `rgb(${ink})`,
+    gridLine: "rgba(0, 0, 0, 0.06)",
+  };
+}
 
 const CATEGORY_PALETTE = [
   "rgb(30, 95, 80)",
@@ -94,6 +105,8 @@ export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState(false);
+
+  const CHART_COLORS = useMemo(() => buildChartColors(), []);
 
   const fetchAnalytics = async () => {
     setAnalyticsLoading(true);
