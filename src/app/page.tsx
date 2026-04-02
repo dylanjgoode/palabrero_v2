@@ -39,7 +39,7 @@ export default function Home() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
                 Audio
               </p>
-              <p className="mt-2 text-sm">OpenAI TTS with optional autoplay.</p>
+              <p className="mt-2 text-sm">Text-to-speech with optional autoplay.</p>
             </div>
           </div>
         </div>

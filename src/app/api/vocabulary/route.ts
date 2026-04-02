@@ -11,8 +11,24 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
-    const limit = parseInt(searchParams.get("limit") ?? "50", 10);
-    const orderBy = searchParams.get("orderBy") ?? "lastSeenAt"; // lastSeenAt, count, term, firstSeenAt
+    const limitStr = searchParams.get("limit");
+    const limit = Math.max(1, Math.min(200, parseInt(limitStr ?? "50", 10) || 50));
+    const orderBy = searchParams.get("orderBy") ?? "lastSeenAt";
+
+    const validOrderValues = ["lastSeenAt", "count", "term", "firstSeenAt"];
+    if (!validOrderValues.includes(orderBy)) {
+      return NextResponse.json(
+        { error: `Invalid orderBy value. Must be one of: ${validOrderValues.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    if (category !== null && category.trim() === "") {
+      return NextResponse.json(
+        { error: "category must be a non-empty string." },
+        { status: 400 }
+      );
+    }
 
     // Base query with optional category filter
     const baseCondition = category ? eq(vocabulary.category, category) : undefined;
@@ -24,7 +40,7 @@ export async function GET(request: Request) {
       .where(baseCondition);
 
     // Build main query
-    let query = db
+    const query = db
       .select({
         id: vocabulary.id,
         term: vocabulary.term,

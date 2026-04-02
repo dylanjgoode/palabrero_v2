@@ -15,6 +15,13 @@
       "when": 1769544987127,
       "tag": "0001_majestic_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775169669763,
+      "tag": "0002_eager_marvel_zombies",
+      "breakpoints": true
     }
   ]
 }

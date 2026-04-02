@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const scenarios = sqliteTable("scenarios", {
   id: text("id").primaryKey(),
@@ -14,7 +14,7 @@ export const scenarios = sqliteTable("scenarios", {
 export const conversations = sqliteTable("conversations", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
-  scenarioId: text("scenario_id").references(() => scenarios.id),
+  scenarioId: text("scenario_id").references(() => scenarios.id, { onDelete: "set null" }),
   summary: text("summary"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
@@ -27,6 +27,7 @@ export const messages = sqliteTable(
     conversationId: text("conversation_id")
       .notNull()
       .references(() => conversations.id),
+    // Allowed values: "user" | "assistant" (SQLite does not support CHECK via Drizzle)
     role: text("role").notNull(),
     content: text("content").notNull(),
     correctedContent: text("corrected_content"),
@@ -70,7 +71,7 @@ export const vocabulary = sqliteTable(
   },
   (table) => ({
     messageIdIdx: index("vocabulary_message_id_idx").on(table.messageId),
-    termIdx: index("vocabulary_term_idx").on(table.term),
+    termIdx: uniqueIndex("vocabulary_term_idx").on(table.term),
   }),
 );
 

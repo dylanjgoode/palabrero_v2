@@ -5,7 +5,7 @@ import { settings } from "@/db/schema";
 
 export const runtime = "nodejs";
 
-const ALLOWED_KEYS = ["openai_api_key", "google_api_key", "ai_provider"];
+const ALLOWED_KEYS = ["google_api_key"];
 
 export async function GET() {
   try {
@@ -15,8 +15,8 @@ export async function GET() {
     for (const row of rows) {
       if (ALLOWED_KEYS.includes(row.key)) {
         // Mask API keys for security
-        if (row.key.endsWith("_api_key") && row.value) {
-          result[row.key] = row.value.slice(0, 8) + "..." + row.value.slice(-4);
+        if (row.key.includes("api_key") && row.value) {
+          result[row.key] = row.value.slice(0, 4) + "•••••" + row.value.slice(-2);
         } else {
           result[row.key] = row.value;
         }

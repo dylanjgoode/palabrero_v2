@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import scenarios from "@/data/scenarios.json";
@@ -13,7 +13,7 @@ import {
   topics,
   vocabulary,
 } from "@/db/schema";
-import { createProvider, type ProviderName } from "@/lib/ai/provider";
+import { createProvider } from "@/lib/ai/provider";
 import type { ChatMessage } from "@/lib/ai/types";
 import { getApiKeys } from "@/lib/settings";
 
@@ -79,14 +79,42 @@ type VocabularyResponse = {
 };
 
 export async function POST(request: Request) {
-  const { openaiApiKey, googleApiKey, aiProvider } = await getApiKeys();
-  const providerName: ProviderName = aiProvider;
+  const { googleApiKey } = await getApiKeys();
 
   let body: RequestBody;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  // Input validation
+  const lastMessage = (body.messages ?? []).at(-1);
+  if (lastMessage) {
+    if (typeof lastMessage.content !== "string" || !lastMessage.content.trim()) {
+      return NextResponse.json(
+        { error: "Message must be a non-empty string." },
+        { status: 400 },
+      );
+    }
+    if (lastMessage.content.length > 2000) {
+      return NextResponse.json(
+        { error: "Message must not exceed 2000 characters." },
+        { status: 400 },
+      );
+    }
+  }
+  if (body.scenarioId !== undefined && typeof body.scenarioId !== "string") {
+    return NextResponse.json(
+      { error: "scenarioId must be a string." },
+      { status: 400 },
+    );
+  }
+  if (body.conversationId !== undefined && typeof body.conversationId !== "string") {
+    return NextResponse.json(
+      { error: "conversationId must be a string." },
+      { status: 400 },
+    );
   }
 
   const chatMessages = normalizeMessages(body.messages ?? []);
@@ -101,7 +129,7 @@ export async function POST(request: Request) {
   const instructions = `${scenarioPrompt}\n\n${baseInstructions}`.trim();
 
   try {
-    const provider = createProvider(providerName, { openaiApiKey, googleApiKey });
+    const provider = createProvider({ googleApiKey });
     const response = await provider.generate({ instructions, messages: chatMessages });
 
     // Persist to database within a transaction
@@ -109,12 +137,12 @@ export async function POST(request: Request) {
     let conversationId = body.conversationId;
     const userMessageId = crypto.randomUUID();
 
-    const persistData = () => {
+    const persistData = (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => {
       // Create new conversation if none provided
       if (!conversationId) {
         conversationId = crypto.randomUUID();
         const scenario = scenarios.find((s) => s.id === body.scenarioId);
-        db.insert(conversations).values({
+        tx.insert(conversations).values({
           id: conversationId,
           title: scenario?.name ?? "Conversation",
           scenarioId: body.scenarioId ?? null,
@@ -123,7 +151,7 @@ export async function POST(request: Request) {
         }).run();
       } else {
         // Update conversation timestamp
-        db.update(conversations)
+        tx.update(conversations)
           .set({ updatedAt: now })
           .where(eq(conversations.id, conversationId))
           .run();
@@ -131,7 +159,7 @@ export async function POST(request: Request) {
 
       // Save user message (the last one in the array)
       const lastUserMessage = chatMessages[chatMessages.length - 1];
-      db.insert(messages).values({
+      tx.insert(messages).values({
         id: userMessageId,
         conversationId,
         role: lastUserMessage.role,
@@ -141,7 +169,7 @@ export async function POST(request: Request) {
       }).run();
 
       // Save assistant response
-      db.insert(messages).values({
+      tx.insert(messages).values({
         id: crypto.randomUUID(),
         conversationId,
         role: "assistant",
@@ -152,7 +180,7 @@ export async function POST(request: Request) {
       // Save corrections (linked to the user message they correct)
       const responseCorrections = (response.corrections ?? []) as CorrectionResponse[];
       for (const correction of responseCorrections) {
-        db.insert(corrections).values({
+        tx.insert(corrections).values({
           id: crypto.randomUUID(),
           messageId: userMessageId,
           errorType: correction.type,
@@ -165,60 +193,65 @@ export async function POST(request: Request) {
 
       // Save vocabulary (upsert: increment count if term exists, preserve original messageId)
       const responseVocabulary = (response.vocabulary ?? []) as VocabularyResponse[];
-      for (const vocab of responseVocabulary) {
-        if (!vocab.term?.trim()) continue;
+      const vocabTerms = responseVocabulary
+        .filter((v) => v.term?.trim())
+        .map((v) => ({ ...v, termLower: v.term.toLowerCase().trim() }));
 
-        const termLower = vocab.term.toLowerCase().trim();
-        const existing = db
+      if (vocabTerms.length > 0) {
+        const existingVocab = tx
           .select()
           .from(vocabulary)
-          .where(eq(vocabulary.term, termLower))
-          .get();
+          .where(inArray(vocabulary.term, vocabTerms.map((v) => v.termLower)))
+          .all();
+        const existingByTerm = new Map(existingVocab.map((v) => [v.term, v]));
 
-        if (existing) {
-          // Only update count and lastSeenAt, preserve original messageId
-          db.update(vocabulary)
-            .set({
-              count: existing.count + 1,
+        for (const vocab of vocabTerms) {
+          const existing = existingByTerm.get(vocab.termLower);
+          if (existing) {
+            // Only update count and lastSeenAt, preserve original messageId
+            tx.update(vocabulary)
+              .set({
+                count: existing.count + 1,
+                lastSeenAt: now,
+              })
+              .where(eq(vocabulary.id, existing.id))
+              .run();
+          } else {
+            tx.insert(vocabulary).values({
+              id: crypto.randomUUID(),
+              messageId: userMessageId,
+              term: vocab.termLower,
+              translation: vocab.translation ?? null,
+              partOfSpeech: vocab.partOfSpeech ?? null,
+              category: vocab.category ?? "general",
+              count: 1,
+              firstSeenAt: now,
               lastSeenAt: now,
-            })
-            .where(eq(vocabulary.id, existing.id))
-            .run();
-        } else {
-          db.insert(vocabulary).values({
-            id: crypto.randomUUID(),
-            messageId: userMessageId,
-            term: termLower,
-            translation: vocab.translation ?? null,
-            partOfSpeech: vocab.partOfSpeech ?? null,
-            category: vocab.category ?? "general",
-            count: 1,
-            firstSeenAt: now,
-            lastSeenAt: now,
-          }).run();
+            }).run();
+          }
         }
       }
 
-      // Save tenses (link message to tenses used)
-      const responseTenses = response.tenses ?? [];
-      for (const tenseId of responseTenses) {
-        // Verify tense exists before inserting
-        const tenseExists = db.select().from(tenses).where(eq(tenses.id, tenseId)).get();
-        if (tenseExists) {
-          db.insert(messageTenses).values({
+      // Save tenses (link message to tenses used) — batch validate
+      const responseTenses = (response.tenses ?? []) as string[];
+      if (responseTenses.length > 0) {
+        const existingTenses = tx.select().from(tenses).where(inArray(tenses.id, responseTenses)).all();
+        const validTenseIds = new Set(existingTenses.map((t) => t.id));
+        for (const tenseId of responseTenses.filter((id) => validTenseIds.has(id))) {
+          tx.insert(messageTenses).values({
             messageId: userMessageId,
             tenseId,
           }).run();
         }
       }
 
-      // Save topics (link message to topics discussed)
-      const responseTopics = response.topics ?? [];
-      for (const topicId of responseTopics) {
-        // Verify topic exists before inserting
-        const topicExists = db.select().from(topics).where(eq(topics.id, topicId)).get();
-        if (topicExists) {
-          db.insert(messageTopics).values({
+      // Save topics (link message to topics discussed) — batch validate
+      const responseTopics = (response.topics ?? []) as string[];
+      if (responseTopics.length > 0) {
+        const existingTopics = tx.select().from(topics).where(inArray(topics.id, responseTopics)).all();
+        const validTopicIds = new Set(existingTopics.map((t) => t.id));
+        for (const topicId of responseTopics.filter((id) => validTopicIds.has(id))) {
+          tx.insert(messageTopics).values({
             messageId: userMessageId,
             topicId,
           }).run();
@@ -227,7 +260,7 @@ export async function POST(request: Request) {
 
       // Update conversation summary
       if (response.conversationSummary) {
-        db.update(conversations)
+        tx.update(conversations)
           .set({ summary: response.conversationSummary, updatedAt: now })
           .where(eq(conversations.id, conversationId!))
           .run();
@@ -235,7 +268,7 @@ export async function POST(request: Request) {
     };
 
     // Execute all DB operations in a transaction
-    db.transaction(persistData);
+    await db.transaction(persistData);
 
     return NextResponse.json({
       ...response,
@@ -243,7 +276,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    console.error(`[${providerName}] Error:`, error);
+    console.error("[gemini] Error:", error);
 
     // Check if it's a missing API key error
     if (message.includes("not configured")) {
@@ -251,7 +284,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: `${providerName} request failed.` },
+      { error: "Gemini request failed." },
       { status: 500 },
     );
   }

@@ -7,8 +7,12 @@ import { conversations, messages } from "@/db/schema";
 export const runtime = "nodejs";
 
 // GET /api/conversations - List all conversations
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const limitStr = searchParams.get("limit");
+    const limit = Math.max(1, Math.min(500, parseInt(limitStr ?? "100", 10) || 100));
+
     // Single query with message count using LEFT JOIN and GROUP BY
     const rows = await db
       .select({
@@ -23,7 +27,8 @@ export async function GET() {
       .from(conversations)
       .leftJoin(messages, eq(conversations.id, messages.conversationId))
       .groupBy(conversations.id)
-      .orderBy(desc(conversations.updatedAt));
+      .orderBy(desc(conversations.updatedAt))
+      .limit(limit);
 
     return NextResponse.json(rows);
   } catch (error) {
@@ -43,6 +48,24 @@ export async function POST(request: Request) {
       title?: string;
       scenarioId?: string;
     };
+
+    if (title !== undefined) {
+      if (typeof title !== "string" || title.length > 200) {
+        return NextResponse.json(
+          { error: "title must be a string of at most 200 characters." },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (scenarioId !== undefined) {
+      if (typeof scenarioId !== "string" || scenarioId.trim() === "") {
+        return NextResponse.json(
+          { error: "scenarioId must be a non-empty string." },
+          { status: 400 }
+        );
+      }
+    }
 
     const now = Date.now();
     const id = crypto.randomUUID();

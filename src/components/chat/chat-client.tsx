@@ -253,11 +253,14 @@ export default function ChatClient() {
     });
   }, [messages]);
 
+  const isSendingRef = useRef(false);
+
   const handleSend = async (content?: string) => {
     const trimmed = (content ?? input).trim();
-    if (!trimmed || status === "thinking") {
+    if (!trimmed || status === "thinking" || isSendingRef.current) {
       return;
     }
+    isSendingRef.current = true;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -351,6 +354,8 @@ export default function ChatClient() {
       setErrorMessage(
         "We could not reach the tutor. Check your API key or try again.",
       );
+    } finally {
+      isSendingRef.current = false;
     }
   };
 
@@ -669,11 +674,14 @@ export default function ChatClient() {
           ref={(el) => el?.focus()}
         >
           <div
+            role="alertdialog"
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-desc"
             className="surface-card p-6 max-w-sm mx-4 rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-semibold text-lg">Delete conversation?</h3>
-            <p className="text-[rgb(var(--muted))] mt-2">
+            <h3 id="delete-dialog-title" className="font-semibold text-lg">Delete conversation?</h3>
+            <p id="delete-dialog-desc" className="text-[rgb(var(--muted))] mt-2">
               &ldquo;{deleteConfirm.title}&rdquo; will be permanently deleted.
             </p>
             <div className="flex gap-3 mt-4">

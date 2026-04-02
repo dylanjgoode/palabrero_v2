@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { Component, useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -16,6 +16,39 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+
+class ChartErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/60 text-sm text-[rgb(var(--muted))]">
+          <div className="text-center">
+            <p>Chart failed to load.</p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="mt-2 text-sm text-[rgb(var(--accent))] hover:underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type VocabItem = {
   id: string;
@@ -125,11 +158,7 @@ export default function AnalyticsPage() {
   };
 
   useEffect(() => {
-    fetch("/api/analytics")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data: AnalyticsData) => setAnalytics(data))
-      .catch(() => setAnalyticsError(true))
-      .finally(() => setAnalyticsLoading(false));
+    fetchAnalytics();
   }, []);
 
   const stats = analytics
@@ -266,6 +295,7 @@ export default function AnalyticsPage() {
                     </div>
                   ) : (
                     <div className="mt-4 h-[220px]">
+                      <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={progressData}>
                           <defs>
@@ -357,6 +387,7 @@ export default function AnalyticsPage() {
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
+                      </ChartErrorBoundary>
                     </div>
                   )}
                 </div>
@@ -373,6 +404,7 @@ export default function AnalyticsPage() {
                     </div>
                   ) : (
                     <div className="mt-4 h-[220px]">
+                      <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={correctionsData}
@@ -408,6 +440,7 @@ export default function AnalyticsPage() {
                           />
                         </BarChart>
                       </ResponsiveContainer>
+                      </ChartErrorBoundary>
                     </div>
                   )}
                 </div>
@@ -424,6 +457,7 @@ export default function AnalyticsPage() {
                     </div>
                   ) : (
                     <div className="mt-4 h-[220px]">
+                      <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -459,6 +493,7 @@ export default function AnalyticsPage() {
                           />
                         </PieChart>
                       </ResponsiveContainer>
+                      </ChartErrorBoundary>
                     </div>
                   )}
                 </div>
@@ -475,6 +510,7 @@ export default function AnalyticsPage() {
                     </div>
                   ) : (
                     <div className="mt-4 h-[220px]">
+                      <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={topicsWithData}
@@ -510,6 +546,7 @@ export default function AnalyticsPage() {
                           />
                         </BarChart>
                       </ResponsiveContainer>
+                      </ChartErrorBoundary>
                     </div>
                   )}
                 </div>

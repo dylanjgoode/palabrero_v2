@@ -24,6 +24,13 @@ export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
 
+    if (!id || typeof id !== "string" || id.trim() === "") {
+      return NextResponse.json(
+        { error: "Missing or invalid conversation id." },
+        { status: 400 }
+      );
+    }
+
     // Get conversation
     const [conversation] = await db
       .select()
@@ -126,6 +133,13 @@ export async function GET(_request: Request, { params }: RouteParams) {
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
+
+    if (!id || typeof id !== "string" || id.trim() === "") {
+      return NextResponse.json(
+        { error: "Missing or invalid conversation id." },
+        { status: 400 }
+      );
+    }
 
     // Check if conversation exists
     const [conversation] = await db

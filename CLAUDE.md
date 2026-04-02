@@ -10,7 +10,7 @@ Palabrero is a local-first Spanish language learning web application. It's a con
 - **Language**: TypeScript 5 (strict mode)
 - **UI**: React 19, Tailwind CSS 4, Recharts
 - **Database**: SQLite via better-sqlite3 + Drizzle ORM
-- **AI**: OpenAI API or Google Gemini (chat completions), OpenAI TTS
+- **AI**: Google Gemini (chat completions)
 - **Fonts**: IBM Plex Sans, IBM Plex Mono, Source Serif 4
 
 ## Key Commands
@@ -73,14 +73,11 @@ src/
 
 ## Environment Variables
 
-Required (one of):
-- `OPENAI_API_KEY` - OpenAI API key (required if using OpenAI)
-- `GOOGLE_API_KEY` - Google API key (required if using Gemini)
+Required:
+- `GOOGLE_API_KEY` - Google API key for Gemini
 
 Optional:
-- `AI_PROVIDER` - AI provider to use: `openai` or `gemini` (default: `openai`)
 - `DATABASE_URL` - SQLite path (default: `./palabrero.db`)
-- `OPENAI_MODEL` - OpenAI model to use (default: `gpt-4o-mini`)
 - `GEMINI_MODEL` - Gemini model to use (default: `gemini-3-flash-preview`)
 
 ## API Response Format

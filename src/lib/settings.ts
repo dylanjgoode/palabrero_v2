@@ -18,15 +18,9 @@ export async function getSetting(key: string): Promise<string | null> {
 }
 
 export async function getApiKeys() {
-  const [openaiKey, googleKey, provider] = await Promise.all([
-    getSetting("openai_api_key"),
-    getSetting("google_api_key"),
-    getSetting("ai_provider"),
-  ]);
+  const googleKey = await getSetting("google_api_key");
 
   return {
-    openaiApiKey: openaiKey || process.env.OPENAI_API_KEY || null,
     googleApiKey: googleKey || process.env.GOOGLE_API_KEY || null,
-    aiProvider: (provider || process.env.AI_PROVIDER || "openai") as "openai" | "gemini",
   };
 }
