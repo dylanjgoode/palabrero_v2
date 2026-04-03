@@ -13,6 +13,7 @@ export function SettingsForm() {
   const [saving, setSaving] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, "saved" | "error" | undefined>>({});
   const [dirtyFields, setDirtyFields] = useState<Set<keyof FormState>>(new Set());
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -64,9 +65,22 @@ export function SettingsForm() {
     });
   };
 
+  const validateGoogleKey = (value: string): string | null => {
+    if (!value) return null;
+    if (!value.startsWith("AIza")) return "Invalid key format — Google API keys start with AIza";
+    if (value.length < 35 || value.length > 45) return "Invalid key length — expected 39 characters";
+    return null;
+  };
+
   const handleKeyBlur = () => {
     const value = form.google_api_key;
     if (value && dirtyFields.has("google_api_key")) {
+      const error = validateGoogleKey(value);
+      if (error) {
+        setValidationError(error);
+        return;
+      }
+      setValidationError(null);
       saveField("google_api_key", value);
     }
   };
@@ -83,9 +97,10 @@ export function SettingsForm() {
             id="google-key"
             type="password"
             value={form.google_api_key}
-            onChange={(e) => { markDirty("google_api_key"); setForm((prev) => ({ ...prev, google_api_key: e.target.value })); }}
+            onChange={(e) => { markDirty("google_api_key"); setValidationError(null); setForm((prev) => ({ ...prev, google_api_key: e.target.value })); }}
             onBlur={handleKeyBlur}
             placeholder="AIza..."
+            aria-describedby="google-key-help"
             className="flex-1 px-3 py-2 text-sm surface-muted rounded-md border border-transparent focus:border-[rgb(var(--accent))] focus:outline-none"
           />
           <button
@@ -97,13 +112,16 @@ export function SettingsForm() {
             {saving === "google_api_key" ? "Saving..." : "Save"}
           </button>
         </div>
+        {validationError && (
+          <p className="mt-2 text-xs text-red-600">{validationError}</p>
+        )}
         {status.google_api_key === "saved" && (
           <p className="mt-2 text-xs text-green-600">API key saved</p>
         )}
         {status.google_api_key === "error" && (
           <p className="mt-2 text-xs text-red-600">Failed to save</p>
         )}
-        <p className="mt-2 text-xs text-[rgb(var(--muted))]">
+        <p id="google-key-help" className="mt-2 text-xs text-[rgb(var(--muted))]">
           Get your key at{" "}
           <a
             href="https://aistudio.google.com/apikey"

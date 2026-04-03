@@ -86,7 +86,7 @@ type AnalyticsData = {
   };
 };
 
-const tabs = ["Overview", "Vocabulary", "Grammar", "Topics", "Flashcards"];
+const tabs = ["Overview", "Vocabulary"];
 
 function getCssVar(name: string): string {
   if (typeof window === "undefined") return "";
@@ -108,16 +108,9 @@ function buildChartColors() {
   };
 }
 
-const CATEGORY_PALETTE = [
-  "rgb(30, 95, 80)",
-  "rgb(56, 135, 115)",
-  "rgb(86, 160, 140)",
-  "rgb(120, 180, 160)",
-  "rgb(160, 200, 185)",
-  "rgb(45, 80, 68)",
-  "rgb(70, 110, 95)",
-  "rgb(200, 220, 210)",
-];
+const CATEGORY_COLORS = Array.from({ length: 10 }, (_, i) =>
+  `hsl(${(i * 36 + 200) % 360}, 60%, ${50 + (i % 3) * 10}%)`
+);
 
 const tooltipStyle: React.CSSProperties = {
   borderRadius: 12,
@@ -475,8 +468,8 @@ export default function AnalyticsPage() {
                               <Cell
                                 key={t.id}
                                 fill={
-                                  CATEGORY_PALETTE[
-                                    i % CATEGORY_PALETTE.length
+                                  CATEGORY_COLORS[
+                                    i % CATEGORY_COLORS.length
                                   ]
                                 }
                               />
@@ -620,55 +613,26 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {activeTab !== "Overview" && activeTab !== "Vocabulary" && (
-          <div className="mt-6 text-center py-12 text-[rgb(var(--muted))]">
-            {activeTab} analytics coming soon.
-          </div>
-        )}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="surface-card p-6">
-          <p className="eyebrow">Filters</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {[
-              "Conversation selector",
-              "Date range",
-              "Error type",
-              "Scenario",
-            ].map((filter) => (
-              <div key={filter} className="surface-muted p-4 text-sm">
-                <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-                  {filter}
-                </p>
-                <p className="mt-2 text-sm text-[rgb(var(--muted))]">
-                  Pending configuration
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="surface-card p-6">
-          <p className="eyebrow">Exports</p>
-          <p className="mt-3 text-sm text-[rgb(var(--muted))]">
-            Export vocabulary to CSV or generate Mochi flashcards from filtered
-            results.
-          </p>
-          <div className="mt-6 space-y-3 text-sm">
-            <div className="surface-muted flex items-center justify-between px-4 py-3">
-              <span>Vocabulary CSV</span>
-              <button className="btn-secondary" type="button">
-                Download
-              </button>
+      <section className="surface-card p-6">
+        <p className="eyebrow">Filters</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            "Conversation selector",
+            "Date range",
+            "Error type",
+            "Scenario",
+          ].map((filter) => (
+            <div key={filter} className="surface-muted p-4 text-sm">
+              <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                {filter}
+              </p>
+              <p className="mt-2 text-sm text-[rgb(var(--muted))]">
+                Pending configuration
+              </p>
             </div>
-            <div className="surface-muted flex items-center justify-between px-4 py-3">
-              <span>Mochi flashcards</span>
-              <button className="btn-primary" type="button">
-                Generate
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
     </div>

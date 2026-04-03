@@ -50,8 +50,8 @@ export default function SettingsPage() {
                     {toggle.detail}
                   </p>
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
-                  Off
+                <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                  Coming soon
                 </span>
               </div>
             ))}
@@ -78,8 +78,8 @@ export default function SettingsPage() {
                     {toggle.detail}
                   </p>
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
-                  On
+                <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                  Coming soon
                 </span>
               </div>
             ))}
@@ -102,9 +102,9 @@ export default function SettingsPage() {
                 className="surface-muted flex items-center justify-between px-4 py-3"
               >
                 <span>{action}</span>
-                <button className="btn-secondary" type="button">
-                  Run
-                </button>
+                <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                  Coming soon
+                </span>
               </div>
             ))}
           </div>

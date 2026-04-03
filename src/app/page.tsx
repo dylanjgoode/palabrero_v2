@@ -1,6 +1,15 @@
 import Link from "next/link";
+import { count } from "drizzle-orm";
+import { db } from "@/db";
+import { conversations, vocabulary, messages, corrections } from "@/db/schema";
 
-export default function Home() {
+export default async function Home() {
+  const [[convCount], [vocabCount], [msgCount], [corrCount]] = await Promise.all([
+    db.select({ value: count() }).from(conversations),
+    db.select({ value: count() }).from(vocabulary),
+    db.select({ value: count() }).from(messages),
+    db.select({ value: count() }).from(corrections),
+  ]);
   return (
     <div className="space-y-20">
       <section className="grid items-start gap-12 lg:grid-cols-[1.05fr_0.95fr]">
@@ -83,18 +92,34 @@ export default function Home() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="surface-muted px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-                  Vocabulary
+                  Conversations
                 </p>
                 <p className="mt-2 text-xl font-semibold text-[rgb(var(--ink))]">
-                  28 active
+                  {convCount.value}
                 </p>
               </div>
               <div className="surface-muted px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-                  Accuracy
+                  Vocabulary
                 </p>
                 <p className="mt-2 text-xl font-semibold text-[rgb(var(--ink))]">
-                  82%
+                  {vocabCount.value}
+                </p>
+              </div>
+              <div className="surface-muted px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                  Messages
+                </p>
+                <p className="mt-2 text-xl font-semibold text-[rgb(var(--ink))]">
+                  {msgCount.value}
+                </p>
+              </div>
+              <div className="surface-muted px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                  Corrections
+                </p>
+                <p className="mt-2 text-xl font-semibold text-[rgb(var(--ink))]">
+                  {corrCount.value}
                 </p>
               </div>
             </div>

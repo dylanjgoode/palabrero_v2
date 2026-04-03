@@ -41,6 +41,12 @@ export default function RootLayout({
       <body
         className={`${plexSans.variable} ${plexMono.variable} ${sourceSerif.variable} antialiased`}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-[rgb(var(--accent))] focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
+        >
+          Skip to content
+        </a>
         <div className="min-h-screen">
           <header className="border-b border-black/10 bg-white/60 backdrop-blur">
             <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-6">
@@ -55,7 +61,7 @@ export default function RootLayout({
               <TopNav />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-5xl px-6 py-12">
+          <main id="main-content" className="mx-auto w-full max-w-5xl px-6 py-12">
             {children}
           </main>
           <footer className="mx-auto w-full max-w-5xl px-6 pb-10 text-xs text-[rgb(var(--muted))]">

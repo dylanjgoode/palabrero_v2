@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import scenarios from "@/data/scenarios.json";
 import ScenarioSelector from "./scenario-selector";
+import MessageList from "./message-list";
+import ConversationSidebar from "./conversation-sidebar";
+import DeleteDialog from "./delete-dialog";
 
 type Correction = {
   type: string;
@@ -91,24 +94,8 @@ const topicLabels: Record<string, string> = {
   general: "General",
 };
 
-const starterPrompts = [
-  "Quiero practicar cómo pedir comida en un restaurante.",
-  "Necesito ayuda para preparar una entrevista de trabajo.",
-  "¿Podemos hablar sobre mis planes de viaje a España?",
-];
-
 const defaultScenario =
   scenarios.find((scenario) => scenario.isDefault) ?? scenarios[0];
-
-const XIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
-
-function formatRole(role: ChatMessage["role"]) {
-  return role === "user" ? "You" : "Tutor";
-}
 
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -123,16 +110,8 @@ export default function ChatClient() {
   const [sessionVocab, setSessionVocab] = useState<VocabItem[]>([]);
   const [sessionTopics, setSessionTopics] = useState<TopicItem[]>([]);
   const [sessionTenses, setSessionTenses] = useState<TenseItem[]>([]);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const isNearBottomRef = useRef(true);
-
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const threshold = 100;
-    isNearBottomRef.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
-  }, []);
+  const [liveAnnouncement, setLiveAnnouncement] = useState("");
+  const lastFailedMessagesRef = useRef<ChatMessage[] | null>(null);
 
   // Load conversation history on mount
   useEffect(() => {
@@ -151,7 +130,7 @@ export default function ChatClient() {
   }, []);
 
   // Reload conversations after sending a message
-  const refreshConversations = async () => {
+  const refreshConversations = useCallback(async () => {
     try {
       const response = await fetch("/api/conversations");
       if (response.ok) {
@@ -161,7 +140,7 @@ export default function ChatClient() {
     } catch {
       // Silently fail
     }
-  };
+  }, []);
 
   const loadConversation = async (id: string) => {
     try {
@@ -242,16 +221,6 @@ export default function ChatClient() {
     () => scenarios.find((scenario) => scenario.id === scenarioId),
     [scenarioId],
   );
-
-  useEffect(() => {
-    if (!scrollRef.current || !isNearBottomRef.current) {
-      return;
-    }
-    scrollRef.current.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages]);
 
   const isSendingRef = useRef(false);
 
@@ -395,75 +364,7 @@ export default function ChatClient() {
           </div>
         </div>
 
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex-1 space-y-4 overflow-y-auto px-6 py-5"
-        >
-          {messages.length === 0 ? (
-            <div className="space-y-6">
-              <div className="surface-muted p-5 text-sm text-[rgb(var(--muted))]">
-                <p className="font-semibold text-[rgb(var(--ink))]">
-                  Start with a guided prompt
-                </p>
-                <p className="mt-2">
-                  Pick a starter line or type your own to begin the conversation.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {starterPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => handleSend(prompt)}
-                    className="surface-muted px-4 py-3 text-left text-sm transition hover:border-black/30"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex flex-col ${
-                  message.role === "user" ? "items-end" : "items-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[80%] space-y-2 rounded-2xl px-5 py-4 text-sm shadow-sm ${
-                    message.role === "user"
-                      ? "bg-[rgb(var(--accent))] text-white"
-                      : "border border-black/10 bg-white/80"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center justify-between gap-4 text-[0.65rem] uppercase tracking-[0.2em] ${
-                      message.role === "user"
-                        ? "text-white/60"
-                        : "text-black/50"
-                    }`}
-                  >
-                    <span>{formatRole(message.role)}</span>
-                    <span>{message.corrections?.length ?? 0} notes</span>
-                  </div>
-                  <p className="leading-relaxed">{message.content}</p>
-                </div>
-                {message.role === "user" && message.correctedContent && (
-                  <div className="mt-2 max-w-[80%] rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
-                    <p className="text-[0.65rem] uppercase tracking-[0.2em] text-emerald-600 mb-1">
-                      Corrected version
-                    </p>
-                    <p className="text-emerald-800 leading-relaxed">
-                      {message.correctedContent}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+        <MessageList messages={messages} onSendStarter={handleSend} />
 
         <div className="border-t border-black/10 px-6 py-4">
           {errorMessage ? (
@@ -499,210 +400,27 @@ export default function ChatClient() {
         </div>
       </section>
 
-      <aside className="space-y-6">
-        {conversations.length > 0 && (
-          <div className="surface-card p-6">
-            <p className="eyebrow">Recent conversations</p>
-            <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-              {conversations.slice(0, 5).map((conv) => (
-                <div
-                  key={conv.id}
-                  className="group relative flex items-center"
-                >
-                  <button
-                    type="button"
-                    onClick={() => loadConversation(conv.id)}
-                    className={`flex-1 text-left px-3 py-2 rounded-lg text-sm transition hover:bg-black/5 ${
-                      conversationId === conv.id
-                        ? "bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))]"
-                        : "text-[rgb(var(--muted))]"
-                    }`}
-                  >
-                    <p className="font-medium truncate text-[rgb(var(--ink))] pr-6">
-                      {conv.title}
-                    </p>
-                    {conv.summary && (
-                      <p className="text-xs mt-0.5 truncate text-[rgb(var(--muted))] pr-6">
-                        {conv.summary}
-                      </p>
-                    )}
-                    <p className="text-xs mt-0.5">{conv.messageCount} messages</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      confirmDeleteConversation(conv.id, conv.title);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-100 text-[rgb(var(--muted))] hover:text-red-600 transition"
-                    aria-label="Delete conversation"
-                  >
-                    <XIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <ConversationSidebar
+        conversations={conversations}
+        selectedId={conversationId}
+        onSelect={loadConversation}
+        onDelete={confirmDeleteConversation}
+        focusScenarioName={focusScenario?.name ?? null}
+        focusScenarioDescription={focusScenario?.description ?? null}
+        metrics={metrics}
+        recentCorrections={recentCorrections}
+        sessionTenses={sessionTenses}
+        sessionTopics={sessionTopics}
+        sessionVocab={sessionVocab}
+      />
 
-        <div className="surface-card p-6">
-          <p className="eyebrow">Scenario focus</p>
-          <p className="mt-3 text-sm text-[rgb(var(--muted))]">
-            {focusScenario?.description ??
-              "Custom prompt with personalized instructions."}
-          </p>
-          <div className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-            <div className="surface-muted px-4 py-3">
-              Mode: conversational correction
-            </div>
-            <div className="surface-muted px-4 py-3">
-              Output: reply + corrections
-            </div>
-          </div>
-        </div>
-
-        <div className="surface-card p-6">
-          <p className="eyebrow">Session metrics</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {[
-              { label: "Turns", value: metrics.turns },
-              { label: "Messages", value: metrics.messages },
-              { label: "Corrections", value: metrics.corrections },
-              { label: "Scenario", value: focusScenario?.name ?? "Custom" },
-            ].map((metric) => (
-              <div key={metric.label} className="surface-muted p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-                  {metric.label}
-                </p>
-                <p className="mt-2 text-lg font-semibold">{metric.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {(sessionTenses.length > 0 || sessionTopics.length > 0) && (
-          <div className="surface-card p-6">
-            {sessionTenses.length > 0 && (
-              <div>
-                <p className="eyebrow">Tenses practiced</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {sessionTenses.map((tense) => (
-                    <span
-                      key={tense.id}
-                      className="rounded-full bg-[rgb(var(--accent-soft))] px-3 py-1 text-xs font-medium text-[rgb(var(--accent))]"
-                    >
-                      {tense.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {sessionTopics.length > 0 && (
-              <div className={sessionTenses.length > 0 ? "mt-5" : ""}>
-                <p className="eyebrow">Topics covered</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {sessionTopics.map((topic) => (
-                    <span
-                      key={topic.id}
-                      className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-medium text-[rgb(var(--ink))]"
-                    >
-                      {topic.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="surface-card p-6">
-          <p className="eyebrow">Recent corrections</p>
-          {recentCorrections.length ? (
-            <div className="mt-4 space-y-3 text-sm">
-              {recentCorrections.map((correction, index) => (
-                <div key={`${correction.original}-${index}`} className="surface-muted p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
-                    {correction.type}
-                  </p>
-                  <p className="mt-2 text-sm">
-                    {correction.original} →{" "}
-                    <span className="font-semibold">
-                      {correction.corrected}
-                    </span>
-                  </p>
-                  {correction.explanation ? (
-                    <p className="mt-2 text-xs text-[rgb(var(--muted))]">
-                      {correction.explanation}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 surface-muted px-4 py-3 text-sm text-[rgb(var(--muted))]">
-              Corrections will appear here as the tutor responds.
-            </div>
-          )}
-        </div>
-
-        {sessionVocab.length > 0 && (
-          <div className="surface-card p-6">
-            <p className="eyebrow">Session Vocabulary</p>
-            <div className="mt-4 space-y-2">
-              {sessionVocab.map((vocab) => (
-                <div key={vocab.term} className="flex justify-between items-start text-sm">
-                  <div>
-                    <span className="font-medium">{vocab.term}</span>
-                    <span className="text-[rgb(var(--muted))] ml-2">{vocab.translation}</span>
-                  </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--surface-muted))] text-[rgb(var(--muted))]">
-                    {vocab.category}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </aside>
-
-      {deleteConfirm && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={() => !deleting && setDeleteConfirm(null)}
-          onKeyDown={(e) => e.key === "Escape" && !deleting && setDeleteConfirm(null)}
-          tabIndex={-1}
-          ref={(el) => el?.focus()}
-        >
-          <div
-            role="alertdialog"
-            aria-labelledby="delete-dialog-title"
-            aria-describedby="delete-dialog-desc"
-            className="surface-card p-6 max-w-sm mx-4 rounded-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="delete-dialog-title" className="font-semibold text-lg">Delete conversation?</h3>
-            <p id="delete-dialog-desc" className="text-[rgb(var(--muted))] mt-2">
-              &ldquo;{deleteConfirm.title}&rdquo; will be permanently deleted.
-            </p>
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:bg-black/5 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => deleteConversation(deleteConfirm.id)}
-                disabled={deleting}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteDialog
+        isOpen={deleteConfirm !== null}
+        onConfirm={() => deleteConfirm && deleteConversation(deleteConfirm.id)}
+        onCancel={() => setDeleteConfirm(null)}
+        title={deleteConfirm?.title ?? ""}
+        deleting={deleting}
+      />
     </div>
   );
 }
