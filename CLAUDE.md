@@ -34,16 +34,30 @@ src/
 │   │   ├── analytics/route.ts  # Aggregated analytics data
 │   │   ├── conversations/      # CRUD + detail with topics/tenses
 │   │   ├── vocabulary/route.ts # Vocabulary list with filtering
-│   │   └── settings/route.ts   # User settings
+│   │   └── settings/route.ts   # User settings (Gemini API key)
 │   ├── chat/page.tsx       # Main chat page
-│   ├── analytics/page.tsx  # Analytics dashboard
+│   ├── analytics/page.tsx  # Analytics dashboard (Overview + Vocabulary tabs)
 │   └── settings/page.tsx   # Settings page
-├── components/             # React components
-│   ├── top-nav.tsx         # Navigation bar
-│   └── chat/               # Chat-related components
+├── components/
+│   ├── top-nav.tsx             # Navigation bar
+│   ├── chat/
+│   │   ├── chat-client.tsx         # Main chat orchestrator (state + composition)
+│   │   ├── message-list.tsx        # Scrollable message area with auto-scroll
+│   │   ├── conversation-sidebar.tsx # Conversations list, topics/tenses, vocabulary
+│   │   ├── delete-dialog.tsx       # Delete confirmation modal (ARIA alertdialog)
+│   │   └── scenario-selector.tsx   # Scenario dropdown (ARIA combobox)
+│   └── settings/
+│       └── settings-form.tsx   # Google API key form with dirty-field tracking
 ├── db/
 │   ├── schema.ts           # Drizzle schema & relations
-│   └── index.ts            # Database initialization
+│   └── index.ts            # Database initialization (WAL mode)
+├── lib/
+│   └── ai/
+│       ├── provider.ts     # Provider factory (Gemini only)
+│       ├── gemini-provider.ts # Gemini API integration
+│       ├── parse.ts        # AI response JSON parsing
+│       ├── types.ts        # Shared AI types
+│       └── index.ts        # AI module entry point
 └── data/
     └── scenarios.json      # Roleplay scenarios
 ```
@@ -59,6 +73,13 @@ src/
 - Drizzle ORM with type inference (`$inferSelect`, `$inferInsert`)
 - camelCase in TypeScript, snake_case in SQL columns
 - WAL mode enabled for SQLite
+- All multi-step writes wrapped in `db.transaction()` using the `tx` parameter
+- Vocabulary terms stored lowercase with a unique index
+
+### API Routes
+- Input validation at the top of each handler (type checks, length limits, clamped pagination)
+- API key values masked in GET responses (first 4 + last 2 chars)
+- Pagination supported: `?limit=N` with capped maximums
 
 ### Styling
 - Tailwind utility classes preferred
@@ -92,6 +113,17 @@ The chat API returns structured JSON:
     corrected: string;
     explanation?: string;
   }>;
+  vocabulary: Array<{
+    term: string;
+    translation: string;
+    partOfSpeech: string;
+    category: string;
+  }>;
+  correctedContent: string | null;
+  tenses: string[];
+  topics: string[];
+  conversationSummary: string;
+  conversationId: string;
 }
 ```
 
@@ -100,14 +132,19 @@ The chat API returns structured JSON:
 Key tables: `scenarios`, `conversations`, `messages`, `corrections`, `vocabulary`, `topics`, `tenses`, `settings`
 
 Relationships:
-- Scenario → Conversations → Messages
+- Scenario → Conversations (onDelete: set null)
+- Conversation → Messages
 - Message → Corrections, Vocabulary
 - Message ↔ Topics, Tenses (many-to-many via junction tables)
+
+Constraints:
+- `vocabulary.term` has a unique index
+- Messages reference conversations with NOT NULL
 
 ## Development Notes
 
 - No testing framework configured yet
-- Analytics dashboard built with Recharts (weekly progress, error types, tense distribution donut, topic coverage); fetches from `/api/analytics`. Vocabulary tab with category summaries and table. Error states with retry. ARIA tab roles.
-- Settings page is a placeholder shell
-- Chat UI includes: corrections display, corrected content under user messages, conversation summaries, topics/tenses sidebar panel, session vocabulary
+- Homepage displays live stats from the database (conversations, vocabulary, messages, corrections)
+- Analytics dashboard: Overview tab (weekly progress, error types, tense distribution, topic coverage) and Vocabulary tab (category summaries + table)
+- Chat UI: corrections display, corrected content under user messages, conversation summaries, topics/tenses sidebar panel, session vocabulary
 - Vocabulary review page not yet built (API at `/api/vocabulary` is ready)

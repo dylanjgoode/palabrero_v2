@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Correction = {
   type: string;
@@ -35,6 +35,16 @@ type MessageListProps = {
 export default function MessageList({ messages, onSendStarter }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isNearBottomRef = useRef(true);
+  const [expandedCorrections, setExpandedCorrections] = useState<Set<string>>(new Set());
+
+  const toggleCorrections = (id: string) => {
+    setExpandedCorrections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -106,10 +116,31 @@ export default function MessageList({ messages, onSendStarter }: MessageListProp
                 }`}
               >
                 <span>{formatRole(message.role)}</span>
-                <span>{message.corrections?.length ?? 0} notes</span>
+                {(message.corrections?.length ?? 0) > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleCorrections(message.id)}
+                    className={`hover:underline ${message.role === "user" ? "text-white/80" : "text-[rgb(var(--accent))]"}`}
+                  >
+                    {message.corrections!.length} note{message.corrections!.length === 1 ? "" : "s"} {expandedCorrections.has(message.id) ? "\u25b4" : "\u25be"}
+                  </button>
+                ) : (
+                  <span>0 notes</span>
+                )}
               </div>
               <p className="leading-relaxed">{message.content}</p>
             </div>
+            {expandedCorrections.has(message.id) && message.corrections?.length ? (
+              <div className={`mt-2 max-w-[80%] space-y-2 rounded-xl border border-black/10 bg-white/90 px-4 py-3 text-sm ${message.role === "user" ? "self-end" : "self-start"}`}>
+                {message.corrections.map((c, i) => (
+                  <div key={`${c.original}-${i}`}>
+                    <p className="text-[0.6rem] uppercase tracking-[0.2em] text-[rgb(var(--accent))]">{c.type}</p>
+                    <p className="mt-1 text-sm">{c.original} → <span className="font-semibold">{c.corrected}</span></p>
+                    {c.explanation && <p className="mt-1 text-xs text-[rgb(var(--muted))]">{c.explanation}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {message.role === "user" && message.correctedContent && (
               <div className="mt-2 max-w-[80%] rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
                 <p className="text-[0.65rem] uppercase tracking-[0.2em] text-emerald-600 mb-1">

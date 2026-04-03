@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type Correction = {
   type: string;
   original: string;
@@ -69,6 +71,8 @@ export default function ConversationSidebar({
   sessionTopics,
   sessionVocab,
 }: ConversationSidebarProps) {
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
   return (
     <aside className="space-y-6">
       {conversations.length > 0 && (
@@ -117,22 +121,6 @@ export default function ConversationSidebar({
       )}
 
       <div className="surface-card p-6">
-        <p className="eyebrow">Scenario focus</p>
-        <p className="mt-3 text-sm text-[rgb(var(--muted))]">
-          {focusScenarioDescription ??
-            "Custom prompt with personalized instructions."}
-        </p>
-        <div className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-          <div className="surface-muted px-4 py-3">
-            Mode: conversational correction
-          </div>
-          <div className="surface-muted px-4 py-3">
-            Output: reply + corrections
-          </div>
-        </div>
-      </div>
-
-      <div className="surface-card p-6">
         <p className="eyebrow">Session metrics</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {[
@@ -150,41 +138,6 @@ export default function ConversationSidebar({
           ))}
         </div>
       </div>
-
-      {(sessionTenses.length > 0 || sessionTopics.length > 0) && (
-        <div className="surface-card p-6">
-          {sessionTenses.length > 0 && (
-            <div>
-              <p className="eyebrow">Tenses practiced</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {sessionTenses.map((tense) => (
-                  <span
-                    key={tense.id}
-                    className="rounded-full bg-[rgb(var(--accent-soft))] px-3 py-1 text-xs font-medium text-[rgb(var(--accent))]"
-                  >
-                    {tense.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {sessionTopics.length > 0 && (
-            <div className={sessionTenses.length > 0 ? "mt-5" : ""}>
-              <p className="eyebrow">Topics covered</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {sessionTopics.map((topic) => (
-                  <span
-                    key={topic.id}
-                    className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-medium text-[rgb(var(--ink))]"
-                  >
-                    {topic.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="surface-card p-6">
         <p className="eyebrow">Recent corrections</p>
@@ -216,24 +169,85 @@ export default function ConversationSidebar({
         )}
       </div>
 
-      {sessionVocab.length > 0 && (
+      <button
+        type="button"
+        onClick={() => setSidebarExpanded((prev) => !prev)}
+        className="lg:hidden w-full rounded-xl border border-black/10 bg-white/80 px-4 py-3 text-sm font-medium text-[rgb(var(--muted))] transition hover:border-black/30"
+      >
+        {sidebarExpanded ? "Hide session details" : "Show session details"}
+      </button>
+
+      <div className={`space-y-6 ${sidebarExpanded ? "block" : "hidden lg:block"}`}>
         <div className="surface-card p-6">
-          <p className="eyebrow">Session Vocabulary</p>
-          <div className="mt-4 space-y-2">
-            {sessionVocab.map((vocab) => (
-              <div key={vocab.term} className="flex justify-between items-start text-sm">
-                <div>
-                  <span className="font-medium">{vocab.term}</span>
-                  <span className="text-[rgb(var(--muted))] ml-2">{vocab.translation}</span>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--surface-muted))] text-[rgb(var(--muted))]">
-                  {vocab.category}
-                </span>
-              </div>
-            ))}
+          <p className="eyebrow">Scenario focus</p>
+          <p className="mt-3 text-sm text-[rgb(var(--muted))]">
+            {focusScenarioDescription ??
+              "Custom prompt with personalized instructions."}
+          </p>
+          <div className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+            <div className="surface-muted px-4 py-3">
+              Mode: conversational correction
+            </div>
+            <div className="surface-muted px-4 py-3">
+              Output: reply + corrections
+            </div>
           </div>
         </div>
-      )}
+
+        {(sessionTenses.length > 0 || sessionTopics.length > 0) && (
+          <div className="surface-card p-6">
+            {sessionTenses.length > 0 && (
+              <div>
+                <p className="eyebrow">Tenses practiced</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sessionTenses.map((tense) => (
+                    <span
+                      key={tense.id}
+                      className="rounded-full bg-[rgb(var(--accent-soft))] px-3 py-1 text-xs font-medium text-[rgb(var(--accent))]"
+                    >
+                      {tense.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {sessionTopics.length > 0 && (
+              <div className={sessionTenses.length > 0 ? "mt-5" : ""}>
+                <p className="eyebrow">Topics covered</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sessionTopics.map((topic) => (
+                    <span
+                      key={topic.id}
+                      className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-medium text-[rgb(var(--ink))]"
+                    >
+                      {topic.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {sessionVocab.length > 0 && (
+          <div className="surface-card p-6">
+            <p className="eyebrow">Session Vocabulary</p>
+            <div className="mt-4 space-y-2">
+              {sessionVocab.map((vocab) => (
+                <div key={vocab.term} className="flex justify-between items-start text-sm">
+                  <div>
+                    <span className="font-medium">{vocab.term}</span>
+                    <span className="text-[rgb(var(--muted))] ml-2">{vocab.translation}</span>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--surface-muted))] text-[rgb(var(--muted))]">
+                    {vocab.category}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

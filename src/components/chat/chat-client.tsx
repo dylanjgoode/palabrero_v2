@@ -224,6 +224,45 @@ export default function ChatClient() {
 
   const isSendingRef = useRef(false);
 
+  const handleRetry = async () => {
+    if (!lastFailedMessagesRef.current || status === "thinking" || isSendingRef.current) return;
+    isSendingRef.current = true;
+    setStatus("thinking");
+    setErrorMessage(null);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenarioId,
+          conversationId,
+          messages: lastFailedMessagesRef.current.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+      if (!response.ok) throw new Error("Request failed");
+      const data = (await response.json()) as ChatResponse;
+      if (data.conversationId) setConversationId(data.conversationId);
+      const assistantMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: data.reply,
+        corrections: data.corrections ?? [],
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      if (data.corrections?.length) {
+        setLiveAnnouncement(`Tutor responded with ${data.corrections.length} correction${data.corrections.length === 1 ? "" : "s"}`);
+      }
+      lastFailedMessagesRef.current = null;
+      setStatus("idle");
+      refreshConversations();
+    } catch {
+      setStatus("error");
+      setErrorMessage("We could not reach the tutor. Check your API key or try again.");
+    } finally {
+      isSendingRef.current = false;
+    }
+  };
+
   const handleSend = async (content?: string) => {
     const trimmed = (content ?? input).trim();
     if (!trimmed || status === "thinking" || isSendingRef.current) {
@@ -316,9 +355,14 @@ export default function ChatClient() {
         });
       }
 
+      if (data.corrections?.length) {
+        setLiveAnnouncement(`Tutor responded with ${data.corrections.length} correction${data.corrections.length === 1 ? "" : "s"}`);
+      }
+      lastFailedMessagesRef.current = null;
       setStatus("idle");
       refreshConversations();
-    } catch (error) {
+    } catch {
+      lastFailedMessagesRef.current = [...messages, userMessage];
       setStatus("error");
       setErrorMessage(
         "We could not reach the tutor. Check your API key or try again.",
@@ -368,8 +412,15 @@ export default function ChatClient() {
 
         <div className="border-t border-black/10 px-6 py-4">
           {errorMessage ? (
-            <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {errorMessage}
+            <div className="mb-3 flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <span>{errorMessage}</span>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="ml-3 shrink-0 font-semibold text-red-700 underline hover:text-red-900"
+              >
+                Try again
+              </button>
             </div>
           ) : null}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -382,8 +433,10 @@ export default function ChatClient() {
                   handleSend();
                 }
               }}
+              disabled={status === "thinking"}
+              aria-label="Write your next message in Spanish"
               placeholder="Write your next message in Spanish…"
-              className="min-h-[110px] flex-1 resize-none rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent-soft))]"
+              className="min-h-[110px] flex-1 resize-none rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent-soft))] disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               type="button"
@@ -397,6 +450,7 @@ export default function ChatClient() {
           <p className="mt-3 text-xs text-[rgb(var(--muted))]">
             Press Enter to send, Shift+Enter for a new line.
           </p>
+          <div aria-live="polite" className="sr-only">{liveAnnouncement}</div>
         </div>
       </section>
 

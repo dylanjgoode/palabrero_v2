@@ -92,7 +92,7 @@ export function SettingsForm() {
         <label htmlFor="google-key" className="block text-sm font-medium mb-2">
           Google API Key
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             id="google-key"
             type="password"

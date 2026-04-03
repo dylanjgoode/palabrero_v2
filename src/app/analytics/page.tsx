@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
 
   const progressData = (analytics?.progress ?? []).map((p) => ({
     ...p,
-    label: `W${p.week.split("-")[1]}`,
+    label: new Date(p.weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
   }));
 
   const tensesWithData = (analytics?.tenses ?? []).filter((t) => t.count > 0);
@@ -217,14 +217,21 @@ export default function AnalyticsPage() {
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="surface-card p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-              {stat.label}
-            </p>
-            <p className="mt-3 text-2xl font-semibold">{stat.value}</p>
-          </div>
-        ))}
+        {analyticsLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="surface-card p-5">
+                <div className="h-3 w-20 rounded bg-black/10 animate-pulse" />
+                <div className="mt-4 h-7 w-12 rounded bg-black/10 animate-pulse" />
+              </div>
+            ))
+          : stats.map((stat) => (
+              <div key={stat.label} className="surface-card p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+                  {stat.label}
+                </p>
+                <p className="mt-3 text-2xl font-semibold">{stat.value}</p>
+              </div>
+            ))}
       </section>
 
       <section className="surface-card p-6">
@@ -256,8 +263,14 @@ export default function AnalyticsPage() {
         {activeTab === "Overview" && (
           <>
             {analyticsLoading ? (
-              <div className="mt-6 text-center py-12 text-[rgb(var(--muted))]">
-                Loading analytics...
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="surface-muted p-6">
+                    <div className="h-4 w-32 rounded bg-black/10 animate-pulse" />
+                    <div className="mt-2 h-3 w-48 rounded bg-black/10 animate-pulse" />
+                    <div className="mt-4 h-[180px] sm:h-[220px] rounded-2xl bg-black/5 animate-pulse" />
+                  </div>
+                ))}
               </div>
             ) : analyticsError ? (
               <div className="mt-6 text-center py-12">
@@ -287,7 +300,7 @@ export default function AnalyticsPage() {
                       Complete a few sessions to see progress.
                     </div>
                   ) : (
-                    <div className="mt-4 h-[220px]">
+                    <div className="mt-4 h-[180px] sm:h-[220px]">
                       <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={progressData}>
@@ -396,7 +409,7 @@ export default function AnalyticsPage() {
                       No corrections recorded yet.
                     </div>
                   ) : (
-                    <div className="mt-4 h-[220px]">
+                    <div className="mt-4 h-[180px] sm:h-[220px]">
                       <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -449,7 +462,7 @@ export default function AnalyticsPage() {
                       No tense data recorded yet.
                     </div>
                   ) : (
-                    <div className="mt-4 h-[220px]">
+                    <div className="mt-4 h-[180px] sm:h-[220px]">
                       <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -502,7 +515,7 @@ export default function AnalyticsPage() {
                       No topic data recorded yet.
                     </div>
                   ) : (
-                    <div className="mt-4 h-[220px]">
+                    <div className="mt-4 h-[180px] sm:h-[220px]">
                       <ChartErrorBoundary>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -624,7 +637,7 @@ export default function AnalyticsPage() {
             "Error type",
             "Scenario",
           ].map((filter) => (
-            <div key={filter} className="surface-muted p-4 text-sm">
+            <div key={filter} className="surface-muted p-4 text-sm opacity-60">
               <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
                 {filter}
               </p>
