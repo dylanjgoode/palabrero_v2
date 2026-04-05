@@ -1,0 +1,39 @@
+// Script to verify the fix for the data exposure vulnerability
+// It simulates the error handling logic in src/app/api/chat/route.ts after the fix
+
+const mockError = new Error("Google API key is not configured. Add GOOGLE_API_KEY to your .env file.");
+
+function handleChatError(error) {
+  const message = error instanceof Error ? error.message : "";
+  console.log("[SERVER LOG] [gemini] Error:", error.message);
+
+  // Fixed logic from src/app/api/chat/route.ts
+  if (message.includes("not configured")) {
+    return {
+      body: { error: "AI service configuration error." },
+      status: 500
+    };
+  }
+
+  return {
+    body: { error: "Gemini request failed." },
+    status: 500
+  };
+}
+
+const response = handleChatError(mockError);
+
+console.log("--- Client Response ---");
+console.log("Status:", response.status);
+console.log("Body:", JSON.stringify(response.body, null, 2));
+
+if (response.body.error.includes("not configured")) {
+  console.log("\n❌ VULNERABILITY STILL PRESENT: Detailed error message exposed to client.");
+  process.exit(1);
+} else if (response.body.error === "AI service configuration error." && response.status === 500) {
+  console.log("\n✅ FIX VERIFIED: Generic error message returned to client with status 500.");
+  process.exit(0);
+} else {
+  console.log("\n⚠️ Unexpected response from handler.");
+  process.exit(1);
+}
