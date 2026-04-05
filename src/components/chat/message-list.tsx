@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { ChatMessage } from "@/lib/ai/types";
 
 const starterPrompts = [
@@ -21,16 +21,6 @@ type MessageListProps = {
 export default function MessageList({ messages, onSendStarter }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isNearBottomRef = useRef(true);
-  const [expandedCorrections, setExpandedCorrections] = useState<Set<string>>(new Set());
-
-  const toggleCorrections = (id: string) => {
-    setExpandedCorrections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -98,60 +88,49 @@ export default function MessageList({ messages, onSendStarter }: MessageListProp
               </p>
             )}
             <div
-              className={`max-w-[85%] px-5 py-3.5 text-[15px] leading-relaxed relative ${
+              className={`max-w-[85%] text-[15px] leading-relaxed relative overflow-hidden ${
                 message.role === "user"
                   ? "bg-[rgb(var(--accent))] text-white rounded-2xl rounded-tr-sm shadow-md shadow-red-900/10"
                   : "surface-card border border-white/50 rounded-2xl rounded-tl-sm text-[rgb(var(--ink))]"
               }`}
             >
-              <p>{message.content}</p>
-            </div>
-            
-            {/* Notes Toggle */}
-            {(message.corrections?.length ?? 0) > 0 && message.role === "user" && (
-              <button
-                type="button"
-                onClick={() => toggleCorrections(message.id)}
-                className="mt-1 mr-1 flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-widest text-[rgb(var(--accent))] hover:text-[rgb(var(--accent-hover))] transition"
-              >
-                <svg className={`w-3 h-3 transition-transform ${expandedCorrections.has(message.id) ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                </svg>
-                {message.corrections!.length} correction{message.corrections!.length === 1 ? "" : "s"}
-              </button>
-            )}
+              <div className="px-5 py-3.5">
+                <p>{message.content}</p>
+              </div>
 
-            {/* Expanded Notes Section (replaces the redundant green block) */}
-            {expandedCorrections.has(message.id) && (
-              <div className={`mt-2 max-w-[85%] surface-muted border border-[rgb(var(--accent))]/10 p-4 animate-fade ${message.role === "user" ? "self-end rounded-2xl rounded-tr-sm" : "self-start rounded-2xl rounded-tl-sm"}`}>
-                {message.correctedContent && (
-                  <div className="mb-4 pb-4 border-b border-black/5">
-                    <p className="text-[0.6rem] uppercase tracking-widest text-[rgb(var(--muted))] font-bold mb-1">
-                      Corrected Version
-                    </p>
-                    <p className="text-sm font-medium text-[rgb(var(--ink))]">
+              {/* Integrated Inline Corrections */}
+              {(message.corrections?.length ?? 0) > 0 && message.role === "user" && (
+                <div className="bg-black/15 px-5 py-3.5 border-t border-white/10 mt-1">
+                  <div className="flex items-center justify-end gap-1.5 mb-2 text-white/90">
+                    <span className="text-[0.65rem] font-bold uppercase tracking-[0.1em] opacity-90">How you might say it</span>
+                    <svg className="w-3.5 h-3.5 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  
+                  {message.correctedContent && (
+                    <p className="text-[14.5px] font-medium text-white mb-2 text-right leading-snug">
                       {message.correctedContent}
                     </p>
-                  </div>
-                )}
-                
-                {message.corrections?.length ? (
-                  <div className="space-y-3">
-                    {message.corrections.map((c, i) => (
-                      <div key={`${c.original}-${i}`}>
-                        <p className="text-[0.6rem] uppercase tracking-[0.15em] text-[rgb(var(--accent))] font-bold inline-block mr-2">{c.type}</p>
-                        <span className="text-sm">
-                          <span className="line-through text-red-800/40 decoration-red-800/40">{c.original}</span>
-                          <span className="mx-2 text-[rgb(var(--muted))]">→</span>
-                          <span className="font-bold text-[rgb(var(--ink))]">{c.corrected}</span>
-                        </span>
-                        {c.explanation && <p className="mt-1 text-xs italic text-[rgb(var(--muted))]">"{c.explanation}"</p>}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            )}
+                  )}
+                  
+                  {message.corrections && message.corrections.length > 0 && (
+                    <div className="space-y-2 border-t border-white/10 pt-2.5 mt-1 text-right">
+                      {message.corrections.map((c, i) => (
+                        <div key={`${c.original}-${i}`} className="text-[12.5px] text-white/80 transition-colors">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
+                            <span className="line-through decoration-white/40 opacity-70 relative top-[1px]">{c.original}</span>
+                            <span className="opacity-50">→</span>
+                            <span className="font-semibold text-white/95">{c.corrected}</span>
+                          </div>
+                          {c.explanation && <p className="mt-0.5 text-[11px] opacity-75 italic leading-snug">"{c.explanation}"</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ))
       )}

@@ -33,7 +33,7 @@ Palabrero is a local-first Spanish language learning web application. It's a con
 - *Note: No testing framework is configured yet.*
 - Manual testing:
   - Homepage displays live stats (conversations, vocabulary, messages, corrections).
-  - Chat UI: check corrections display, corrected content under user messages, conversation summaries, topics/tenses sidebar panel, and session vocabulary.
+  - Chat UI: check the expandable 'notes' toggle under user messages for inline corrections, the History drawer for recent conversations, and the Tutor's Notebook sidebar for active session insights (tenses, topics, vocabulary, corrections).
   - Analytics dashboard: verify Overview tab (weekly progress, error types, tense distribution, topic coverage) and Vocabulary tab (category summaries + table).
 
 ## Code Style
@@ -50,9 +50,10 @@ Palabrero is a local-first Spanish language learning web application. It's a con
 - camelCase in TypeScript, snake_case in SQL columns.
 
 ### Styling
+- **Premium Organic UI**: The design uses a refined, textural aesthetic (warm noise backgrounds, glassmorphic `.surface-card` elements, carefully staggered animations).
 - Tailwind utility classes preferred.
-- CSS variables for theme colors: `rgb(var(--accent))`.
-- Custom utility classes in `globals.css`: `.surface-card`, `.btn-primary`, `.eyebrow`.
+- CSS variables for theme colors: `rgb(var(--accent))` (deep terracotta), `var(--ink)` (dark charcoal).
+- Custom utility classes in `globals.css`: `.surface-card`, `.surface-muted`, `.btn-primary`, `.eyebrow`.
 - Mobile-first responsive design.
 
 ### Database
