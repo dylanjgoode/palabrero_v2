@@ -1,21 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-
-type Correction = {
-  type: string;
-  original: string;
-  corrected: string;
-  explanation?: string;
-};
-
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  corrections?: Correction[];
-  correctedContent?: string | null;
-};
+import type { ChatMessage } from "@/lib/ai/types";
 
 const starterPrompts = [
   "Quiero practicar cómo pedir comida en un restaurante.",

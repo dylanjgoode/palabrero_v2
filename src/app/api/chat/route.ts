@@ -14,7 +14,7 @@ import {
   vocabulary,
 } from "@/db/schema";
 import { createProvider } from "@/lib/ai/provider";
-import type { ChatMessage } from "@/lib/ai/types";
+import type { ChatMessage, Correction, Vocabulary } from "@/lib/ai/types";
 
 export const runtime = "nodejs";
 
@@ -61,20 +61,6 @@ type RequestBody = {
   messages?: ChatMessage[];
   scenarioId?: string;
   conversationId?: string;
-};
-
-type CorrectionResponse = {
-  type: string;
-  original: string;
-  corrected: string;
-  explanation?: string;
-};
-
-type VocabularyResponse = {
-  term: string;
-  translation: string;
-  partOfSpeech: string;
-  category: string;
 };
 
 export async function POST(request: Request) {
@@ -175,7 +161,7 @@ export async function POST(request: Request) {
       }).run();
 
       // Save corrections (linked to the user message they correct)
-      const responseCorrections = (response.corrections ?? []) as CorrectionResponse[];
+      const responseCorrections = (response.corrections ?? []) as Correction[];
       for (const correction of responseCorrections) {
         tx.insert(corrections).values({
           id: crypto.randomUUID(),
@@ -189,7 +175,7 @@ export async function POST(request: Request) {
       }
 
       // Save vocabulary (upsert: increment count if term exists, preserve original messageId)
-      const responseVocabulary = (response.vocabulary ?? []) as VocabularyResponse[];
+      const responseVocabulary = (response.vocabulary ?? []) as Vocabulary[];
       const vocabTerms = responseVocabulary
         .filter((v) => v.term?.trim())
         .map((v) => ({ ...v, termLower: v.term.toLowerCase().trim() }));
