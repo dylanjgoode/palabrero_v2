@@ -1,38 +1,13 @@
 "use client";
 
 import { useState } from "react";
-
-type Correction = {
-  type: string;
-  original: string;
-  corrected: string;
-  explanation?: string;
-};
-
-type VocabItem = {
-  term: string;
-  translation: string;
-  category: string;
-};
-
-type TopicItem = {
-  id: string;
-  label: string;
-};
-
-type TenseItem = {
-  id: string;
-  label: string;
-};
-
-type ConversationSummary = {
-  id: string;
-  title: string;
-  scenarioId: string | null;
-  messageCount: number;
-  updatedAt: number;
-  summary: string | null;
-};
+import type {
+  Correction,
+  ConversationSummary,
+  TenseItem,
+  TopicItem,
+  Vocabulary,
+} from "@/lib/ai/types";
 
 const XIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -51,7 +26,7 @@ type ConversationSidebarProps = {
   recentCorrections: Correction[];
   sessionTenses: TenseItem[];
   sessionTopics: TopicItem[];
-  sessionVocab: VocabItem[];
+  sessionVocab: Vocabulary[];
 };
 
 export default function ConversationSidebar({

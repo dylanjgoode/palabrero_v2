@@ -12,6 +12,7 @@ import {
   topics,
   vocabulary,
 } from "@/db/schema";
+import type { ConversationDetail } from "@/lib/ai/types";
 
 export const runtime = "nodejs";
 

@@ -7,65 +7,15 @@ import ScenarioSelector from "./scenario-selector";
 import MessageList from "./message-list";
 import ConversationSidebar from "./conversation-sidebar";
 import DeleteDialog from "./delete-dialog";
-
-type Correction = {
-  type: string;
-  original: string;
-  corrected: string;
-  explanation?: string;
-};
-
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  corrections?: Correction[];
-  correctedContent?: string | null;
-};
-
-type VocabItem = {
-  term: string;
-  translation: string;
-  category: string;
-};
-
-type TopicItem = {
-  id: string;
-  label: string;
-};
-
-type TenseItem = {
-  id: string;
-  label: string;
-};
-
-type ChatResponse = {
-  reply: string;
-  corrections: Correction[];
-  conversationId: string;
-  vocabulary?: VocabItem[];
-  correctedContent?: string | null;
-  topics?: string[];
-  tenses?: string[];
-};
-
-type ConversationSummary = {
-  id: string;
-  title: string;
-  scenarioId: string | null;
-  messageCount: number;
-  updatedAt: number;
-  summary: string | null;
-};
-
-type ConversationDetail = {
-  id: string;
-  title: string;
-  scenarioId: string | null;
-  messages: ChatMessage[];
-  topics?: TopicItem[];
-  tenses?: TenseItem[];
-};
+import type {
+  ChatMessage,
+  ChatResponse,
+  ConversationDetail,
+  ConversationSummary,
+  TenseItem,
+  TopicItem,
+  Vocabulary,
+} from "@/lib/ai/types";
 
 const tenseLabels: Record<string, string> = {
   present: "Present indicative",
@@ -107,7 +57,7 @@ export default function ChatClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [sessionVocab, setSessionVocab] = useState<VocabItem[]>([]);
+  const [sessionVocab, setSessionVocab] = useState<Vocabulary[]>([]);
   const [sessionTopics, setSessionTopics] = useState<TopicItem[]>([]);
   const [sessionTenses, setSessionTenses] = useState<TenseItem[]>([]);
   const [liveAnnouncement, setLiveAnnouncement] = useState("");
