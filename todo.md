@@ -8,8 +8,6 @@
 
 - [ ] **Truncated error message in chat** - `src/components/chat/chat-client.tsx:340` reads "Check your API key or try ." — missing text after "try".
 
-- [ ] **Settings GET query is a tautology** - `src/app/api/settings/route.ts:16` uses `.where(eq(settings.key, settings.key))`, comparing the column to itself. Returns every row. Works accidentally because of the `ALLOWED_KEYS` filter afterward.
-
 ## Improvements (by priority)
 
 - [x] **Add database indexes** - No indexes on `messages.conversation_id`, `corrections.message_id`, `vocabulary.term`, `vocabulary.message_id`. SQLite does not auto-create FK indexes. Performance degrades as data grows.

@@ -46,10 +46,10 @@ function convertToGeminiContents(
   return contents;
 }
 
-export function createGeminiProvider(apiKey?: string | null): AIProvider {
-  const key = apiKey || process.env.GOOGLE_API_KEY;
+export function createGeminiProvider(): AIProvider {
+  const key = process.env.GOOGLE_API_KEY;
   if (!key) {
-    throw new Error("Google API key is not configured. Add it in Settings.");
+    throw new Error("Google API key is not configured. Add GOOGLE_API_KEY to your .env file.");
   }
 
   const client = new GoogleGenAI({ apiKey: key });

@@ -15,7 +15,6 @@ import {
 } from "@/db/schema";
 import { createProvider } from "@/lib/ai/provider";
 import type { ChatMessage } from "@/lib/ai/types";
-import { getApiKeys } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -79,8 +78,6 @@ type VocabularyResponse = {
 };
 
 export async function POST(request: Request) {
-  const { googleApiKey } = await getApiKeys();
-
   let body: RequestBody;
   try {
     body = await request.json();
@@ -129,7 +126,7 @@ export async function POST(request: Request) {
   const instructions = `${scenarioPrompt}\n\n${baseInstructions}`.trim();
 
   try {
-    const provider = createProvider({ googleApiKey });
+    const provider = createProvider();
     const response = await provider.generate({ instructions, messages: chatMessages });
 
     // Persist to database within a transaction

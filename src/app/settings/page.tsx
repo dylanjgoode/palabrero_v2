@@ -1,5 +1,3 @@
-import { SettingsForm } from "@/components/settings/settings-form";
-
 const toggles = [
   { label: "Auto-play tutor audio", detail: "Enable TTS playback by default." },
   { label: "Save chat transcripts", detail: "Store sessions locally." },
@@ -15,23 +13,11 @@ export default function SettingsPage() {
           Configuration and storage.
         </h1>
         <p className="text-sm text-[rgb(var(--muted))] sm:text-base">
-          Palabrero runs locally. Configure your API keys below and control how
-          data is stored on device.
+          Palabrero runs locally. Control how data is stored on device.
         </p>
       </header>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="surface-card p-6">
-          <p className="eyebrow">API access</p>
-          <p className="mt-3 text-sm text-[rgb(var(--muted))]">
-            API keys are stored locally in SQLite and never leave your machine.
-            Choose your preferred AI provider below.
-          </p>
-          <div className="mt-6">
-            <SettingsForm />
-          </div>
-        </div>
-
         <div className="surface-card p-6">
           <p className="eyebrow">Audio</p>
           <p className="mt-3 text-sm text-[rgb(var(--muted))]">
@@ -57,9 +43,7 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-      </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="surface-card p-6">
           <p className="eyebrow">Data storage</p>
           <p className="mt-3 text-sm text-[rgb(var(--muted))]">
@@ -86,7 +70,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="surface-card p-6">
+        <div className="surface-card p-6 lg:col-span-2">
           <p className="eyebrow">Maintenance</p>
           <p className="mt-3 text-sm text-[rgb(var(--muted))]">
             Export or reset local data. These actions are manual for safety.
