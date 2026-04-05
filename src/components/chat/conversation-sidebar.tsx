@@ -239,7 +239,7 @@ export default function ConversationSidebar({
                     <span className="font-medium">{vocab.term}</span>
                     <span className="text-[rgb(var(--muted))] ml-2">{vocab.translation}</span>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--surface-muted))] text-[rgb(var(--muted))]">
+                  <span className="text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-[rgb(var(--background))] text-[rgb(var(--muted))]">
                     {vocab.category}
                   </span>
                 </div>

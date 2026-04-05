@@ -86,7 +86,7 @@ export default function MessageList({ messages, onSendStarter }: MessageListProp
                 key={prompt}
                 type="button"
                 onClick={() => onSendStarter(prompt)}
-                className="surface-muted px-4 py-3 text-left text-sm transition hover:border-black/30"
+                className="surface-muted px-5 py-4 text-left text-[15px] font-medium transition hover:-translate-y-1 hover:shadow-sm"
               >
                 {prompt}
               </button>

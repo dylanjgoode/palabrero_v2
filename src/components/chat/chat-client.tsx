@@ -447,7 +447,7 @@ export default function ChatClient() {
               Send
             </button>
           </div>
-          <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+          <p className="mt-4 text-center text-xs font-semibold text-[rgb(var(--muted))]">
             Press Enter to send, Shift+Enter for a new line.
           </p>
           <div aria-live="polite" className="sr-only">{liveAnnouncement}</div>

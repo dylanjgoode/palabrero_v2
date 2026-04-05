@@ -151,7 +151,7 @@ export default function ScenarioSelector({
                     </svg>
                   )}
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-[rgb(var(--muted))]">
+                <p className={`mt-1 text-xs leading-relaxed ${isSelected ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--muted))]"}`}>
                   {scenario.description}
                 </p>
               </li>

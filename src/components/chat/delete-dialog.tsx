@@ -69,26 +69,26 @@ export default function DeleteDialog({
           }
         }}
       >
-        <h3 id="delete-dialog-title" className="font-semibold text-lg">Delete conversation?</h3>
-        <p id="delete-dialog-desc" className="text-[rgb(var(--muted))] mt-2">
+        <h3 id="delete-dialog-title" className="font-[family-name:var(--font-fraunces)] text-3xl text-[rgb(var(--ink))] mb-2">Delete conversation?</h3>
+        <p id="delete-dialog-desc" className="text-[rgb(var(--ink-body))] leading-relaxed mb-6">
           &ldquo;{title}&rdquo; will be permanently deleted.
         </p>
-        <div className="flex gap-3 mt-4">
-          <button
-            ref={cancelBtnRef}
-            onClick={onCancel}
-            disabled={deleting}
-            className="flex-1 px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:bg-black/5 disabled:opacity-50"
-          >
-            Cancel
-          </button>
+        <div className="flex flex-col gap-3">
           <button
             ref={deleteBtnRef}
             onClick={onConfirm}
             disabled={deleting}
-            className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+            className="w-full px-6 py-3 rounded-full bg-red-600 text-white font-bold hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
             {deleting ? "Deleting..." : "Delete"}
+          </button>
+          <button
+            ref={cancelBtnRef}
+            onClick={onCancel}
+            disabled={deleting}
+            className="w-full px-6 py-3 rounded-full border border-black/10 text-[rgb(var(--ink-body))] font-bold hover:bg-black/5 disabled:opacity-50 transition-colors"
+          >
+            Cancel
           </button>
         </div>
       </div>

@@ -18,7 +18,7 @@ export default function SettingsPage() {
       </header>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="surface-card p-6">
+        <div className="surface-card p-8">
           <p className="eyebrow">Audio</p>
           <p className="mt-3 text-sm text-[rgb(var(--muted))]">
             Text-to-speech is optional. Audio clips are cached locally once
@@ -44,7 +44,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="surface-card p-6">
+        <div className="surface-card p-8">
           <p className="eyebrow">Data storage</p>
           <p className="mt-3 text-sm text-[rgb(var(--muted))]">
             Conversation history, corrections, and vocabulary are stored in
@@ -70,7 +70,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="surface-card p-6 lg:col-span-2">
+        <div className="surface-card p-8 lg:col-span-2">
           <p className="eyebrow">Maintenance</p>
           <p className="mt-3 text-sm text-[rgb(var(--muted))]">
             Export or reset local data. These actions are manual for safety.

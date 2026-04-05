@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import {
   IBM_Plex_Mono,
-  IBM_Plex_Sans,
-  Source_Serif_4,
+  Nunito,
+  Fraunces,
 } from "next/font/google";
 import "./globals.css";
 import TopNav from "@/components/top-nav";
+import Link from "next/link";
 
-const plexSans = IBM_Plex_Sans({
-  variable: "--font-plex-sans",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["300", "400", "600", "700"],
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -19,10 +20,10 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-source-serif",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -39,35 +40,35 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${plexSans.variable} ${plexMono.variable} ${sourceSerif.variable} antialiased`}
+        className={`${nunito.variable} ${plexMono.variable} ${fraunces.variable} antialiased relative`}
       >
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-[rgb(var(--accent))] focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-[rgb(var(--accent))] focus:px-6 focus:py-3 focus:text-white focus:shadow-lg"
         >
           Skip to content
         </a>
-        <div className="min-h-screen">
-          <header className="border-b border-black/10 bg-white/60 backdrop-blur">
-            <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-6">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[rgb(var(--accent))]">
-                  Palabrero
-                </p>
-                <p className="text-sm text-[rgb(var(--muted))]">
-                  Un lugar para expresarse, aprender y reflejar.
-                </p>
-              </div>
+        
+        {/* Organic Background Blobs */}
+        <div className="pointer-events-none fixed top-0 left-0 w-96 h-96 bg-[rgb(var(--accent-soft))] rounded-full mix-blend-multiply filter blur-3xl opacity-70 -z-10 -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="pointer-events-none fixed bottom-0 right-0 w-[500px] h-[500px] bg-[rgb(var(--accent-warm))] rounded-full mix-blend-multiply filter blur-3xl opacity-70 -z-10 translate-x-1/3 translate-y-1/3"></div>
+
+        <div className="min-h-screen flex flex-col">
+          <header className="pt-8 pb-4 px-6 relative z-10">
+            <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 rounded-full bg-white/50 backdrop-blur-md px-8 py-4 shadow-[0_4px_20px_-10px_rgba(214,125,107,0.1)]">
+              <Link href="/" className="font-[family-name:var(--font-fraunces)] text-2xl font-bold text-[rgb(var(--ink))]">
+                palabrero<span className="text-[rgb(var(--accent))]">.</span>
+              </Link>
               <TopNav />
             </div>
           </header>
-          <main id="main-content" className="mx-auto w-full max-w-5xl px-6 py-12">
+          <main id="main-content" className="mx-auto w-full max-w-6xl px-6 py-8 flex-1">
             {children}
           </main>
-          <footer className="mx-auto w-full max-w-5xl px-6 pb-10 text-xs text-[rgb(var(--muted))]">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-6">
+          <footer className="mx-auto w-full max-w-6xl px-6 pb-10 text-sm text-[rgb(var(--muted))] mt-auto">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-6">
               <span>Local-first. No accounts. Your data stays on-device.</span>
-              <span>Build: early handoff scaffold</span>
+              <span>🌿 Organic UI Concept</span>
             </div>
           </footer>
         </div>

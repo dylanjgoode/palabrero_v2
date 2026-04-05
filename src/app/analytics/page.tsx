@@ -134,23 +134,23 @@ export default function AnalyticsPage() {
 
   const CHART_COLORS = useMemo(() => buildChartColors(), []);
 
-  const fetchAnalytics = async () => {
-    setAnalyticsLoading(true);
-    setAnalyticsError(false);
-    try {
-      const res = await fetch("/api/analytics");
-      if (res.ok) {
-        setAnalytics(await res.json());
-      } else {
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      setAnalyticsError(false);
+      try {
+        const res = await fetch("/api/analytics");
+        if (res.ok) {
+          setAnalytics(await res.json());
+        } else {
+          setAnalyticsError(true);
+        }
+      } catch {
         setAnalyticsError(true);
       }
-    } catch {
-      setAnalyticsError(true);
-    }
-    setAnalyticsLoading(false);
-  };
+      setAnalyticsLoading(false);
+    };
 
-  useEffect(() => {
     fetchAnalytics();
   }, []);
 
@@ -628,20 +628,20 @@ export default function AnalyticsPage() {
 
       </section>
 
-      <section className="surface-card p-6">
+      <section className="surface-card p-8">
         <p className="eyebrow">Filters</p>
-        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[
             "Conversation selector",
             "Date range",
             "Error type",
             "Scenario",
           ].map((filter) => (
-            <div key={filter} className="surface-muted p-4 text-sm opacity-60">
-              <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+            <div key={filter} className="surface-muted p-5 text-sm opacity-70">
+              <p className="text-[0.65rem] font-bold uppercase tracking-widest text-[rgb(var(--muted))]">
                 {filter}
               </p>
-              <p className="mt-2 text-sm text-[rgb(var(--muted))]">
+              <p className="mt-2 text-sm font-semibold text-[rgb(var(--ink-body))]">
                 Pending configuration
               </p>
             </div>
