@@ -176,16 +176,20 @@ export async function POST(request: Request) {
 
       // Save corrections (linked to the user message they correct)
       const responseCorrections = (response.corrections ?? []) as CorrectionResponse[];
-      for (const correction of responseCorrections) {
-        tx.insert(corrections).values({
-          id: crypto.randomUUID(),
-          messageId: userMessageId,
-          errorType: correction.type,
-          originalText: correction.original,
-          correctedText: correction.corrected,
-          explanation: correction.explanation ?? null,
-          createdAt: now,
-        }).run();
+      if (responseCorrections.length > 0) {
+        tx.insert(corrections)
+          .values(
+            responseCorrections.map((correction) => ({
+              id: crypto.randomUUID(),
+              messageId: userMessageId,
+              errorType: correction.type,
+              originalText: correction.original,
+              correctedText: correction.corrected,
+              explanation: correction.explanation ?? null,
+              createdAt: now,
+            })),
+          )
+          .run();
       }
 
       // Save vocabulary (upsert: increment count if term exists, preserve original messageId)
@@ -232,26 +236,42 @@ export async function POST(request: Request) {
       // Save tenses (link message to tenses used) — batch validate
       const responseTenses = (response.tenses ?? []) as string[];
       if (responseTenses.length > 0) {
-        const existingTenses = tx.select().from(tenses).where(inArray(tenses.id, responseTenses)).all();
+        const existingTenses = tx
+          .select()
+          .from(tenses)
+          .where(inArray(tenses.id, responseTenses))
+          .all();
         const validTenseIds = new Set(existingTenses.map((t) => t.id));
-        for (const tenseId of responseTenses.filter((id) => validTenseIds.has(id))) {
-          tx.insert(messageTenses).values({
+        const tensesToInsert = responseTenses
+          .filter((id) => validTenseIds.has(id))
+          .map((tenseId) => ({
             messageId: userMessageId,
             tenseId,
-          }).run();
+          }));
+
+        if (tensesToInsert.length > 0) {
+          tx.insert(messageTenses).values(tensesToInsert).run();
         }
       }
 
       // Save topics (link message to topics discussed) — batch validate
       const responseTopics = (response.topics ?? []) as string[];
       if (responseTopics.length > 0) {
-        const existingTopics = tx.select().from(topics).where(inArray(topics.id, responseTopics)).all();
+        const existingTopics = tx
+          .select()
+          .from(topics)
+          .where(inArray(topics.id, responseTopics))
+          .all();
         const validTopicIds = new Set(existingTopics.map((t) => t.id));
-        for (const topicId of responseTopics.filter((id) => validTopicIds.has(id))) {
-          tx.insert(messageTopics).values({
+        const topicsToInsert = responseTopics
+          .filter((id) => validTopicIds.has(id))
+          .map((topicId) => ({
             messageId: userMessageId,
             topicId,
-          }).run();
+          }));
+
+        if (topicsToInsert.length > 0) {
+          tx.insert(messageTopics).values(topicsToInsert).run();
         }
       }
 
