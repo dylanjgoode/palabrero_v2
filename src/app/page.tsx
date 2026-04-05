@@ -14,32 +14,32 @@ export default async function Home() {
         <div className="flex flex-col justify-center">
             <span className="inline-block px-4 py-2 bg-[rgb(var(--accent-soft))] text-[rgb(var(--ink))] rounded-full text-sm font-bold w-max mb-6">Local-first tutor 🌿</span>
             <h1 className="font-[family-name:var(--font-fraunces)] text-5xl md:text-7xl leading-[1.1] mb-6 text-[rgb(var(--ink))]">
-                Speak Spanish with <br/><i className="text-[rgb(var(--accent))]">confidence</i>.
+                Your personal <br/><i className="text-[rgb(var(--accent))]">language</i> lab.
             </h1>
             <p className="text-lg text-[rgb(var(--ink-body))] max-w-md leading-relaxed mb-10">
-                A warm, conversational workspace that captures your mistakes and turns them into gentle, measurable progress without leaving your device.
+                A private, conversational workspace to practice Spanish. Make mistakes, learn from gentle corrections, and track your progress without leaving your device.
             </p>
             <div className="flex flex-wrap gap-4">
                 <Link className="btn-primary" href="/chat">
                     Start chatting
                 </Link>
                 <Link className="btn-secondary" href="/analytics">
-                    Review progress
+                    View insights
                 </Link>
             </div>
             
             <div className="mt-12 grid gap-4 text-[rgb(var(--ink-body))] sm:grid-cols-3">
               <div className="surface-muted px-5 py-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--accent))]">Data model</p>
-                <p className="mt-2 text-sm font-semibold">Conversations, corrections, vocabulary.</p>
+                <p className="text-[0.65rem] font-bold uppercase tracking-widest text-[rgb(var(--accent))]">Local</p>
+                <p className="mt-2 text-sm font-semibold">100% on-device SQLite storage.</p>
               </div>
               <div className="surface-muted px-5 py-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--accent))]">Storage</p>
-                <p className="mt-2 text-sm font-semibold">SQLite on-device with export options.</p>
+                <p className="text-[0.65rem] font-bold uppercase tracking-widest text-[rgb(var(--accent))]">Private</p>
+                <p className="mt-2 text-sm font-semibold">No accounts. Bring your own key.</p>
               </div>
               <div className="surface-muted px-5 py-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--accent))]">Audio</p>
-                <p className="mt-2 text-sm font-semibold">Text-to-speech with optional autoplay.</p>
+                <p className="text-[0.65rem] font-bold uppercase tracking-widest text-[rgb(var(--accent))]">Focused</p>
+                <p className="mt-2 text-sm font-semibold">No gamification, just real practice.</p>
               </div>
             </div>
         </div>
@@ -78,26 +78,26 @@ export default async function Home() {
 
       <section className="space-y-12 max-w-4xl mx-auto text-center">
         <div className="space-y-4">
-            <span className="inline-block px-4 py-2 bg-[rgb(var(--accent-warm))] text-[rgb(var(--accent-hover))] rounded-full text-sm font-bold w-max mb-2 mx-auto">Core modules</span>
-            <h2 className="font-[family-name:var(--font-fraunces)] text-4xl md:text-5xl text-[rgb(var(--ink))]">Built for accountable practice.</h2>
-            <p className="text-[rgb(var(--ink-body))] max-w-lg mx-auto text-lg">Every workflow emphasizes clarity, repeatability, and a gentle audit trail of what was corrected and why.</p>
+            <span className="inline-block px-4 py-2 bg-[rgb(var(--accent-warm))] text-[rgb(var(--accent-hover))] rounded-full text-sm font-bold w-max mb-2 mx-auto">Core features</span>
+            <h2 className="font-[family-name:var(--font-fraunces)] text-4xl md:text-5xl text-[rgb(var(--ink))]">Practice with purpose.</h2>
+            <p className="text-[rgb(var(--ink-body))] max-w-lg mx-auto text-lg">Built to capture the nuances of conversational learning, providing a clear audit trail of what was corrected and why.</p>
         </div>
         <div className="grid gap-6 md:grid-cols-3 text-left">
           {[
             {
               title: "Conversational Practice",
-              detail: "Real-time corrections with alternate phrasing and recorded mistakes.",
+              detail: "Engage in real-time dialogue with gentle corrections and alternate phrasing.",
               icon: "💬"
             },
             {
-              title: "Scenario Library",
-              detail: "Roleplay templates and custom prompts for focused practice.",
-              icon: "🎭"
+              title: "Insightful Analytics",
+              detail: "Track your most frequent grammar mistakes and tense usage over time.",
+              icon: "📈"
             },
             {
-              title: "Learning Analytics",
-              detail: "Trends across grammar, vocabulary, topics, and accuracy.",
-              icon: "📈"
+              title: "Passive Vocabulary",
+              detail: "Automatically captures new words from sessions to review later.",
+              icon: "📚"
             },
           ].map((item) => (
             <div key={item.title} className="surface-card p-8 transition-transform hover:-translate-y-1">
@@ -113,15 +113,14 @@ export default async function Home() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-[rgb(var(--accent-soft))] rounded-full mix-blend-multiply blur-3xl opacity-50 -translate-y-1/2 translate-x-1/3"></div>
         <div className="relative z-10 text-center mb-12 space-y-4 flex flex-col items-center">
             <span className="inline-block px-4 py-2 bg-[rgb(var(--accent-warm))] text-[rgb(var(--accent-hover))] rounded-full text-sm font-bold w-max mb-2">Workflow</span>
-            <h2 className="font-[family-name:var(--font-fraunces)] text-4xl md:text-5xl text-[rgb(var(--ink))]">From session to study plan.</h2>
-            <p className="text-[rgb(var(--ink-body))] max-w-lg mx-auto text-lg">Each conversation feeds analytics and optional flashcards without manual curation.</p>
+            <h2 className="font-[family-name:var(--font-fraunces)] text-4xl md:text-5xl text-[rgb(var(--ink))]">No gamification. Just learning.</h2>
+            <p className="text-[rgb(var(--ink-body))] max-w-lg mx-auto text-lg">Conversations feed directly into your personal insights and vocabulary list.</p>
         </div>
-        <div className="grid gap-6 md:grid-cols-4 relative z-10">
+        <div className="grid gap-6 md:grid-cols-3 relative z-10">
           {[
-            "Start a chat with a scenario.",
-            "Receive corrections and explanations.",
-            "Review analytics and filters.",
-            "Export flashcards to Mochi.",
+            "Select a scenario and start chatting.",
+            "Receive inline grammar and tense corrections.",
+            "Review your personal learning insights.",
           ].map((step, index) => (
             <div key={step} className="surface-muted p-6 text-center">
               <div className="w-12 h-12 mx-auto rounded-full bg-[rgb(var(--accent-warm))] text-[rgb(var(--accent-hover))] flex items-center justify-center font-bold text-xl mb-4">

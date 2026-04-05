@@ -101,13 +101,13 @@ export async function POST(request: Request) {
       );
     }
   }
-  if (body.scenarioId !== undefined && typeof body.scenarioId !== "string") {
+  if (body.scenarioId !== undefined && body.scenarioId !== null && typeof body.scenarioId !== "string") {
     return NextResponse.json(
       { error: "scenarioId must be a string." },
       { status: 400 },
     );
   }
-  if (body.conversationId !== undefined && typeof body.conversationId !== "string") {
+  if (body.conversationId !== undefined && body.conversationId !== null && typeof body.conversationId !== "string") {
     return NextResponse.json(
       { error: "conversationId must be a string." },
       { status: 400 },

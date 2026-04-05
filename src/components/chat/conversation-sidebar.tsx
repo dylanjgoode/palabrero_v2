@@ -41,10 +41,6 @@ const XIcon = ({ className }: { className?: string }) => (
 );
 
 type ConversationSidebarProps = {
-  conversations: ConversationSummary[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  onDelete: (id: string, title: string) => void;
   focusScenarioName: string | null;
   focusScenarioDescription: string | null;
   metrics: {
@@ -59,10 +55,6 @@ type ConversationSidebarProps = {
 };
 
 export default function ConversationSidebar({
-  conversations,
-  selectedId,
-  onSelect,
-  onDelete,
   focusScenarioName,
   focusScenarioDescription,
   metrics,
@@ -74,97 +66,73 @@ export default function ConversationSidebar({
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
-    <aside className="space-y-6">
-      {conversations.length > 0 && (
-        <div className="surface-card p-6">
-          <p className="eyebrow">Recent conversations</p>
-          <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-            {conversations.slice(0, 5).map((conv) => (
-              <div
-                key={conv.id}
-                className="group relative flex items-center"
-              >
-                <button
-                  type="button"
-                  onClick={() => onSelect(conv.id)}
-                  className={`flex-1 text-left px-3 py-2 rounded-lg text-sm transition hover:bg-black/5 ${
-                    selectedId === conv.id
-                      ? "bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))]"
-                      : "text-[rgb(var(--muted))]"
-                  }`}
-                >
-                  <p className="font-medium truncate text-[rgb(var(--ink))] pr-6">
-                    {conv.title}
-                  </p>
-                  {conv.summary && (
-                    <p className="text-xs mt-0.5 truncate text-[rgb(var(--muted))] pr-6">
-                      {conv.summary}
-                    </p>
-                  )}
-                  <p className="text-xs mt-0.5">{conv.messageCount} messages</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(conv.id, conv.title);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-100 text-[rgb(var(--muted))] hover:text-red-600 transition"
-                  aria-label="Delete conversation"
-                >
-                  <XIcon className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+    <aside className="space-y-4">
+      {/* Tutor's Notebook Header */}
+      <div className="flex items-center gap-3 px-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-[rgb(var(--accent-soft))] flex items-center justify-center text-[rgb(var(--accent))]">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
         </div>
-      )}
+        <h2 className="font-[family-name:var(--font-fraunces)] text-lg font-semibold text-[rgb(var(--ink))]">
+          Tutor's Notebook
+        </h2>
+      </div>
 
-      <div className="surface-card p-6">
-        <p className="eyebrow">Session metrics</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="surface-card p-5 animate-rise" style={{ animationDelay: '0.1s' }}>
+        <p className="eyebrow">Session overview</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {[
             { label: "Turns", value: metrics.turns },
             { label: "Messages", value: metrics.messages },
             { label: "Corrections", value: metrics.corrections },
             { label: "Scenario", value: focusScenarioName ?? "Custom" },
           ].map((metric) => (
-            <div key={metric.label} className="surface-muted p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
+            <div key={metric.label} className="surface-muted p-3">
+              <p className="text-[0.65rem] uppercase tracking-[0.15em] text-[rgb(var(--muted))]">
                 {metric.label}
               </p>
-              <p className="mt-2 text-lg font-semibold">{metric.value}</p>
+              <p className="mt-1 text-base font-semibold">{metric.value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="surface-card p-6">
-        <p className="eyebrow">Recent corrections</p>
+      <div className="surface-card p-5 animate-rise" style={{ animationDelay: '0.2s' }}>
+        <p className="eyebrow flex items-center justify-between">
+          <span>Active Corrections</span>
+          {recentCorrections.length > 0 && (
+            <span className="bg-[rgb(var(--accent-soft))] text-[rgb(var(--accent))] px-2 py-0.5 rounded-full text-[0.6rem]">
+              {recentCorrections.length}
+            </span>
+          )}
+        </p>
         {recentCorrections.length ? (
-          <div className="mt-4 space-y-3 text-sm">
+          <div className="mt-3 space-y-2 text-sm">
             {recentCorrections.map((correction, index) => (
-              <div key={`${correction.original}-${index}`} className="surface-muted p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
+              <div key={`${correction.original}-${index}`} className="surface-muted p-3 border-l-2 border-l-[rgb(var(--accent))]">
+                <p className="text-[0.65rem] uppercase tracking-[0.1em] text-[rgb(var(--accent))] font-bold">
                   {correction.type}
                 </p>
-                <p className="mt-2 text-sm">
-                  {correction.original} →{" "}
-                  <span className="font-semibold">
+                <div className="mt-1.5 flex flex-col gap-1">
+                  <p className="text-[rgb(var(--muted))] line-through decoration-1 decoration-red-400">
+                    {correction.original}
+                  </p>
+                  <p className="font-semibold text-[rgb(var(--ink))]">
                     {correction.corrected}
-                  </span>
-                </p>
+                  </p>
+                </div>
                 {correction.explanation ? (
-                  <p className="mt-2 text-xs text-[rgb(var(--muted))]">
-                    {correction.explanation}
+                  <p className="mt-2 text-xs italic text-[rgb(var(--muted))]">
+                    "{correction.explanation}"
                   </p>
                 ) : null}
               </div>
             ))}
           </div>
         ) : (
-          <div className="mt-4 surface-muted px-4 py-3 text-sm text-[rgb(var(--muted))]">
-            Corrections will appear here as the tutor responds.
+          <div className="mt-3 surface-muted px-4 py-4 text-center text-sm text-[rgb(var(--muted))] italic">
+            Waiting for grammar or vocabulary corrections.
           </div>
         )}
       </div>
@@ -172,38 +140,22 @@ export default function ConversationSidebar({
       <button
         type="button"
         onClick={() => setSidebarExpanded((prev) => !prev)}
-        className="lg:hidden w-full rounded-xl border border-black/10 bg-white/80 px-4 py-3 text-sm font-medium text-[rgb(var(--muted))] transition hover:border-black/30"
+        className="lg:hidden w-full surface-card px-4 py-3 text-sm font-medium text-[rgb(var(--ink))] transition hover:bg-white border hover:border-black/10"
       >
-        {sidebarExpanded ? "Hide session details" : "Show session details"}
+        {sidebarExpanded ? "Hide Notebook contents \u25b4" : "Show Notebook contents \u25be"}
       </button>
 
-      <div className={`space-y-6 ${sidebarExpanded ? "block" : "hidden lg:block"}`}>
-        <div className="surface-card p-6">
-          <p className="eyebrow">Scenario focus</p>
-          <p className="mt-3 text-sm text-[rgb(var(--muted))]">
-            {focusScenarioDescription ??
-              "Custom prompt with personalized instructions."}
-          </p>
-          <div className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted))]">
-            <div className="surface-muted px-4 py-3">
-              Mode: conversational correction
-            </div>
-            <div className="surface-muted px-4 py-3">
-              Output: reply + corrections
-            </div>
-          </div>
-        </div>
-
+      <div className={`space-y-4 ${sidebarExpanded ? "block" : "hidden lg:block"} animate-rise`} style={{ animationDelay: '0.3s' }}>
         {(sessionTenses.length > 0 || sessionTopics.length > 0) && (
-          <div className="surface-card p-6">
+          <div className="surface-card p-5">
             {sessionTenses.length > 0 && (
               <div>
-                <p className="eyebrow">Tenses practiced</p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <p className="eyebrow">Tenses</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {sessionTenses.map((tense) => (
                     <span
                       key={tense.id}
-                      className="rounded-full bg-[rgb(var(--accent-soft))] px-3 py-1 text-xs font-medium text-[rgb(var(--accent))]"
+                      className="rounded-md bg-[rgb(var(--accent-soft))] px-2.5 py-1 text-xs font-semibold text-[rgb(var(--accent))] shadow-sm"
                     >
                       {tense.label}
                     </span>
@@ -212,13 +164,13 @@ export default function ConversationSidebar({
               </div>
             )}
             {sessionTopics.length > 0 && (
-              <div className={sessionTenses.length > 0 ? "mt-5" : ""}>
-                <p className="eyebrow">Topics covered</p>
-                <div className="mt-3 flex flex-wrap gap-2">
+              <div className={sessionTenses.length > 0 ? "mt-4" : ""}>
+                <p className="eyebrow">Topics</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {sessionTopics.map((topic) => (
                     <span
                       key={topic.id}
-                      className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-medium text-[rgb(var(--ink))]"
+                      className="rounded-md surface-muted border border-white/40 px-2.5 py-1 text-xs font-medium text-[rgb(var(--ink))]"
                     >
                       {topic.label}
                     </span>
@@ -230,16 +182,16 @@ export default function ConversationSidebar({
         )}
 
         {sessionVocab.length > 0 && (
-          <div className="surface-card p-6">
-            <p className="eyebrow">Session Vocabulary</p>
-            <div className="mt-4 space-y-2">
+          <div className="surface-card p-5 animate-rise" style={{ animationDelay: '0.4s' }}>
+            <p className="eyebrow">Vocabulary</p>
+            <div className="mt-3 space-y-1.5">
               {sessionVocab.map((vocab) => (
-                <div key={vocab.term} className="flex justify-between items-start text-sm">
-                  <div>
-                    <span className="font-medium">{vocab.term}</span>
-                    <span className="text-[rgb(var(--muted))] ml-2">{vocab.translation}</span>
+                <div key={vocab.term} className="flex justify-between items-center text-sm border-b border-black/5 pb-1.5 last:border-0 last:pb-0">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-[rgb(var(--ink))]">{vocab.term}</span>
+                    <span className="text-[0.75rem] text-[rgb(var(--muted))]">{vocab.translation}</span>
                   </div>
-                  <span className="text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-[rgb(var(--background))] text-[rgb(var(--muted))]">
+                  <span className="text-[0.55rem] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm surface-muted text-[rgb(var(--muted))] border border-white/50">
                     {vocab.category}
                   </span>
                 </div>

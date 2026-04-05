@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Component, useEffect, useMemo, useState } from "react";
+import React, { Component, useEffect, useMemo, useState, useCallback } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -134,25 +134,25 @@ export default function AnalyticsPage() {
 
   const CHART_COLORS = useMemo(() => buildChartColors(), []);
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      setAnalyticsLoading(true);
-      setAnalyticsError(false);
-      try {
-        const res = await fetch("/api/analytics");
-        if (res.ok) {
-          setAnalytics(await res.json());
-        } else {
-          setAnalyticsError(true);
-        }
-      } catch {
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    setAnalyticsError(false);
+    try {
+      const res = await fetch("/api/analytics");
+      if (res.ok) {
+        setAnalytics(await res.json());
+      } else {
         setAnalyticsError(true);
       }
-      setAnalyticsLoading(false);
-    };
-
-    fetchAnalytics();
+    } catch {
+      setAnalyticsError(true);
+    }
+    setAnalyticsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const stats = analytics
     ? [

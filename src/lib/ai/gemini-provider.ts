@@ -3,7 +3,7 @@ import type { AIProvider, ChatMessage, ChatResponse, GenerateOptions, ProviderCo
 import { parseJsonResponse } from "./parse";
 
 const defaultConfig: ProviderConfig = {
-  model: process.env.GEMINI_MODEL ?? "gemini-3-flash-preview",
+  model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
   temperature: 0.4,
   maxOutputTokens: 2048,
 };
