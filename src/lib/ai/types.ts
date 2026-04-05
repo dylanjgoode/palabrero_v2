@@ -1,10 +1,5 @@
 export type Role = "user" | "assistant";
 
-export type ChatMessage = {
-  role: Role;
-  content: string;
-};
-
 export type Correction = {
   type: string;
   original: string;
@@ -12,21 +7,58 @@ export type Correction = {
   explanation?: string;
 };
 
+export type ChatMessage = {
+  id?: string;
+  role: Role;
+  content: string;
+  corrections?: Correction[];
+  correctedContent?: string | null;
+};
+
 export type Vocabulary = {
   term: string;
   translation: string;
-  partOfSpeech: string;
+  partOfSpeech?: string;
   category: string;
+};
+
+export type TopicItem = {
+  id: string;
+  label: string;
+};
+
+export type TenseItem = {
+  id: string;
+  label: string;
 };
 
 export type ChatResponse = {
   reply: string;
   corrections: Correction[];
+  conversationId?: string;
   vocabulary?: Vocabulary[];
   correctedContent?: string | null;
   tenses?: string[];
   topics?: string[];
   conversationSummary?: string;
+};
+
+export type ConversationSummary = {
+  id: string;
+  title: string;
+  scenarioId: string | null;
+  messageCount: number;
+  updatedAt: number;
+  summary: string | null;
+};
+
+export type ConversationDetail = {
+  id: string;
+  title: string;
+  scenarioId: string | null;
+  messages: ChatMessage[];
+  topics?: TopicItem[];
+  tenses?: TenseItem[];
 };
 
 export type ProviderConfig = {

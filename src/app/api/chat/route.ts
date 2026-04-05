@@ -14,7 +14,7 @@ import {
   vocabulary,
 } from "@/db/schema";
 import { createProvider } from "@/lib/ai/provider";
-import type { ChatMessage } from "@/lib/ai/types";
+import type { ChatMessage, Correction, Vocabulary } from "@/lib/ai/types";
 
 export const runtime = "nodejs";
 
@@ -63,20 +63,6 @@ type RequestBody = {
   conversationId?: string;
 };
 
-type CorrectionResponse = {
-  type: string;
-  original: string;
-  corrected: string;
-  explanation?: string;
-};
-
-type VocabularyResponse = {
-  term: string;
-  translation: string;
-  partOfSpeech: string;
-  category: string;
-};
-
 export async function POST(request: Request) {
   let body: RequestBody;
   try {
@@ -101,13 +87,13 @@ export async function POST(request: Request) {
       );
     }
   }
-  if (body.scenarioId !== undefined && typeof body.scenarioId !== "string") {
+  if (body.scenarioId !== undefined && body.scenarioId !== null && typeof body.scenarioId !== "string") {
     return NextResponse.json(
       { error: "scenarioId must be a string." },
       { status: 400 },
     );
   }
-  if (body.conversationId !== undefined && typeof body.conversationId !== "string") {
+  if (body.conversationId !== undefined && body.conversationId !== null && typeof body.conversationId !== "string") {
     return NextResponse.json(
       { error: "conversationId must be a string." },
       { status: 400 },
@@ -175,7 +161,7 @@ export async function POST(request: Request) {
       }).run();
 
       // Save corrections (linked to the user message they correct)
-      const responseCorrections = (response.corrections ?? []) as CorrectionResponse[];
+      const responseCorrections = (response.corrections ?? []) as Correction[];
       if (responseCorrections.length > 0) {
         tx.insert(corrections)
           .values(
@@ -193,7 +179,7 @@ export async function POST(request: Request) {
       }
 
       // Save vocabulary (upsert: increment count if term exists, preserve original messageId)
-      const responseVocabulary = (response.vocabulary ?? []) as VocabularyResponse[];
+      const responseVocabulary = (response.vocabulary ?? []) as Vocabulary[];
       const vocabTerms = responseVocabulary
         .filter((v) => v.term?.trim())
         .map((v) => ({ ...v, termLower: v.term.toLowerCase().trim() }));
@@ -295,9 +281,12 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "";
     console.error("[gemini] Error:", error);
 
-    // Check if it's a missing API key error
+    // Use a generic message for configuration errors while logging the details
     if (message.includes("not configured")) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return NextResponse.json(
+        { error: "AI service configuration error." },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json(

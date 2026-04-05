@@ -7,65 +7,15 @@ import ScenarioSelector from "./scenario-selector";
 import MessageList from "./message-list";
 import ConversationSidebar from "./conversation-sidebar";
 import DeleteDialog from "./delete-dialog";
-
-type Correction = {
-  type: string;
-  original: string;
-  corrected: string;
-  explanation?: string;
-};
-
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  corrections?: Correction[];
-  correctedContent?: string | null;
-};
-
-type VocabItem = {
-  term: string;
-  translation: string;
-  category: string;
-};
-
-type TopicItem = {
-  id: string;
-  label: string;
-};
-
-type TenseItem = {
-  id: string;
-  label: string;
-};
-
-type ChatResponse = {
-  reply: string;
-  corrections: Correction[];
-  conversationId: string;
-  vocabulary?: VocabItem[];
-  correctedContent?: string | null;
-  topics?: string[];
-  tenses?: string[];
-};
-
-type ConversationSummary = {
-  id: string;
-  title: string;
-  scenarioId: string | null;
-  messageCount: number;
-  updatedAt: number;
-  summary: string | null;
-};
-
-type ConversationDetail = {
-  id: string;
-  title: string;
-  scenarioId: string | null;
-  messages: ChatMessage[];
-  topics?: TopicItem[];
-  tenses?: TenseItem[];
-};
+import type {
+  ChatMessage,
+  ChatResponse,
+  ConversationDetail,
+  ConversationSummary,
+  TenseItem,
+  TopicItem,
+  Vocabulary,
+} from "@/lib/ai/types";
 
 const tenseLabels: Record<string, string> = {
   present: "Present indicative",
@@ -107,10 +57,11 @@ export default function ChatClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [sessionVocab, setSessionVocab] = useState<VocabItem[]>([]);
+  const [sessionVocab, setSessionVocab] = useState<Vocabulary[]>([]);
   const [sessionTopics, setSessionTopics] = useState<TopicItem[]>([]);
   const [sessionTenses, setSessionTenses] = useState<TenseItem[]>([]);
   const [liveAnnouncement, setLiveAnnouncement] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const lastFailedMessagesRef = useRef<ChatMessage[] | null>(null);
 
   // Load conversation history on mount
@@ -159,6 +110,7 @@ export default function ChatClient() {
       }
       setStatus("idle");
       setErrorMessage(null);
+      setHistoryOpen(false); // Close history drawer if open
     } catch {
       setErrorMessage("Failed to load conversation.");
     }
@@ -384,29 +336,40 @@ export default function ChatClient() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <section className="surface-card flex min-h-[560px] flex-col">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 px-6 py-5">
-          <div>
-            <p className="eyebrow">Active session</p>
-            <p className="mt-2 text-lg font-semibold">
-              {focusScenario?.name ?? "Custom scenario"}
-            </p>
+    <>
+      <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+        <section className="surface-card flex min-h-[600px] flex-col relative overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 px-6 py-5 bg-white/40">
+            <div>
+              <p className="eyebrow text-[rgb(var(--accent))]">Active session</p>
+              <p className="mt-1 text-lg font-bold font-[family-name:var(--font-fraunces)]">
+                {focusScenario?.name ?? "Custom scenario"}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button 
+                type="button" 
+                onClick={() => setHistoryOpen(true)}
+                className="btn-secondary px-3 py-2 space-x-2 text-sm !rounded-md"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="hidden sm:inline">History</span>
+              </button>
+              <ScenarioSelector
+                scenarios={scenarios}
+                value={scenarioId}
+                onChange={setScenarioId}
+              />
+              <button className="btn-secondary px-3 py-2 text-sm !rounded-md" type="button" onClick={handleReset}>
+                <svg className="w-4 h-4 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden sm:inline">New chat</span>
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <ScenarioSelector
-              scenarios={scenarios}
-              value={scenarioId}
-              onChange={setScenarioId}
-            />
-            <button className="btn-secondary" type="button" onClick={handleReset}>
-              New chat
-            </button>
-            <span className="rounded-full bg-[rgb(var(--accent-soft))] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
-              {status === "thinking" ? "Thinking" : "Ready"}
-            </span>
-          </div>
-        </div>
 
         <MessageList messages={messages} onSendStarter={handleSend} />
 
@@ -436,15 +399,23 @@ export default function ChatClient() {
               disabled={status === "thinking"}
               aria-label="Write your next message in Spanish"
               placeholder="Write your next message in Spanish…"
-              className="min-h-[110px] flex-1 resize-none rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent-soft))] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="min-h-[110px] flex-1 resize-none rounded-xl border border-black/10 bg-white px-4 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-shadow"
             />
             <button
               type="button"
               onClick={() => handleSend()}
-              className="btn-primary w-full sm:w-auto"
+              className="btn-primary w-full sm:w-auto h-[50px] self-end"
               disabled={status === "thinking"}
             >
-              Send
+              {status === "thinking" ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Thinking
+                </span>
+              ) : "Send \u2192"}
             </button>
           </div>
           <p className="mt-4 text-center text-xs font-semibold text-[rgb(var(--muted))]">
@@ -455,10 +426,6 @@ export default function ChatClient() {
       </section>
 
       <ConversationSidebar
-        conversations={conversations}
-        selectedId={conversationId}
-        onSelect={loadConversation}
-        onDelete={confirmDeleteConversation}
         focusScenarioName={focusScenario?.name ?? null}
         focusScenarioDescription={focusScenario?.description ?? null}
         metrics={metrics}
@@ -468,6 +435,63 @@ export default function ChatClient() {
         sessionVocab={sessionVocab}
       />
 
+      {historyOpen && (
+        <div className="fixed inset-0 z-50 flex justify-start bg-black/20 backdrop-blur-sm" onClick={() => setHistoryOpen(false)}>
+          <div 
+            className="w-full max-w-sm h-full bg-[rgb(var(--surface))] shadow-2xl p-6 overflow-y-auto animate-fade shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6 border-b border-black/5 pb-4">
+              <h2 className="text-xl font-bold font-[family-name:var(--font-fraunces)] text-[rgb(var(--ink))]">Conversation History</h2>
+              <button onClick={() => setHistoryOpen(false)} className="p-2 hover:bg-black/5 rounded-full transition">
+                <svg className="w-5 h-5 text-[rgb(var(--muted))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {conversations.length === 0 ? (
+              <p className="text-sm text-[rgb(var(--muted))] italic">No past conversations found.</p>
+            ) : (
+              <div className="space-y-3">
+                {conversations.map((conv) => (
+                  <div key={conv.id} className="group relative flex flex-col surface-muted border border-transparent p-3 rounded-xl hover:border-[rgb(var(--accent-soft))] hover:bg-white transition shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => loadConversation(conv.id)}
+                      className="text-left w-full pr-8"
+                    >
+                      <p className={`font-semibold text-sm ${conversationId === conv.id ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--ink))]"}`}>
+                        {conv.title}
+                      </p>
+                      <p className="text-xs text-[rgb(var(--muted))] mt-1 line-clamp-2">
+                        {conv.summary ?? "No summary available."}
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[rgb(var(--muted))] mt-2 bg-black/5 inline-block px-2 py-0.5 rounded">
+                        {conv.messageCount} msgs \u2022 {new Date(conv.updatedAt).toLocaleDateString()}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        confirmDeleteConversation(conv.id, conv.title);
+                      }}
+                      className="absolute right-2 top-3 p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-50 text-red-300 hover:text-red-600 transition"
+                      aria-label="Delete conversation"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <DeleteDialog
         isOpen={deleteConfirm !== null}
         onConfirm={() => deleteConfirm && deleteConversation(deleteConfirm.id)}
@@ -476,5 +500,6 @@ export default function ChatClient() {
         deleting={deleting}
       />
     </div>
+    </>
   );
 }
