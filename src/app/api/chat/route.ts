@@ -275,9 +275,12 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "";
     console.error("[gemini] Error:", error);
 
-    // Check if it's a missing API key error
+    // Use a generic message for configuration errors while logging the details
     if (message.includes("not configured")) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return NextResponse.json(
+        { error: "AI service configuration error." },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json(
