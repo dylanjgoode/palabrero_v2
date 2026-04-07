@@ -24,6 +24,12 @@
 .DS_Store
 *.pem
 *.db
+*.db-shm
+*.db-wal
+
+# editors
+.vscode/
+.idea/
 
 # debug
 npm-debug.log*
