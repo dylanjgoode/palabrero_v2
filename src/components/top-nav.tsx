@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/chat", label: "Chat" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/", label: "Analytics" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -16,7 +16,9 @@ export default function TopNav() {
     <nav className="flex flex-wrap items-center gap-2 text-sm font-bold">
       {navItems.map((item) => {
         const isActive =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
+          item.href === "/"
+            ? pathname === "/"
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <Link
